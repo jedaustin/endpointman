@@ -62,12 +62,15 @@ class epm_system {
      * @author http://www.webcheatsheet.com/PHP/working_with_directories.php
      * @param string $dir Full Directory path to delete
      * @version 2.11
+     * @return bool true when nothing is left at $dir (callers test the result)
      */
     function rmrf($dir) {
-        if (file_exists($dir)) {
-            $iterator = new \RecursiveDirectoryIterator($dir);
+        if (is_link($dir) || is_file($dir)) {
+            @unlink($dir);
+        } elseif (file_exists($dir)) {
+            $iterator = new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
             foreach (new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::CHILD_FIRST) as $file) {
-                if ($file->isDir()) {
+                if ($file->isDir() && !$file->isLink()) {
                     @rmdir($file->getPathname());
                 } else {
                     @unlink($file->getPathname());
@@ -76,6 +79,8 @@ class epm_system {
             //Remove parent path as the last step
             @rmdir($dir);
         }
+        clearstatcache(true, $dir);
+        return !file_exists($dir);
     }
 
     /**

@@ -296,6 +296,16 @@ $opts = function (array $list, $blank = false) use ($h) {
 						<label class="small">(<input type="checkbox" name="reboot" value="1"> <?= _("Reboot Phones") ?>)</label>
 					</form>
 
+					<!-- ============ Migration from the commercial Endpoint Manager ============ -->
+					<h4><?= _("Migrating from the commercial Endpoint Manager?") ?></h4>
+					<p class="small">
+						<a class="btn btn-default btn-sm" href="config.php?display=epm_devices&amp;sub_type=download_export_tool"><i class="fa fa-download text-primary"></i> <?= _("Download export tool") ?></a>
+						<?= _("Run it on the OLD FreePBX system (13 to 16, commercial \"endpoint\" module) as root:") ?>
+						<code>php export-commercial-epm.php --check</code> <?= _("to see what it found, then") ?>
+						<code>php export-commercial-epm.php --out=epm-mapping.json</code>.
+						<?= _("It reads only the endpoint_* tables, exports no passwords or SIP secrets, and lists every phone with its MAC, brand, model, template and the extension on each line, plus the data problems to fix before importing.") ?>
+					</p>
+
 					<!-- hidden single-device action form -->
 					<form id="epm_devices_form_single" action="config.php?display=epm_devices" method="POST" style="display:none">
 						<input type="hidden" name="display" value="epm_devices">

@@ -166,6 +166,28 @@ class Endpointman_Devices
 		return array('status' => true, 'options' => $options);
 	}
 
+	/**
+	 * Send tools/export-commercial-epm.php as a download and stop the request.
+	 * The script is CLI-only (it refuses to run under a web server), so the raw file is safe to hand out.
+	 */
+	public function send_export_tool()
+	{
+		$file = $this->epm->system->buildPath($this->epm->MODULE_PATH, 'tools', 'export-commercial-epm.php');
+		if (!is_file($file) || !is_readable($file))
+		{
+			header('HTTP/1.1 404 Not Found');
+			echo _("The export tool is missing from this module installation.");
+			exit;
+		}
+		while (ob_get_level() > 0) { ob_end_clean(); }
+		header('Content-Type: application/octet-stream');
+		header('Content-Disposition: attachment; filename="export-commercial-epm.php"');
+		header('Content-Length: ' . filesize($file));
+		header('X-Content-Type-Options: nosniff');
+		readfile($file);
+		exit;
+	}
+
 	/*********************************************************************
 	 * Page actions (POST), processed before the page renders
 	 *********************************************************************/
@@ -175,6 +197,13 @@ class Endpointman_Devices
 		$sub_type = strtolower(trim($request['sub_type'] ?? ''));
 		if ($sub_type === '' || $sub_type === 'edit')
 		{
+			return;
+		}
+		if ($sub_type === 'download_export_tool')
+		{
+			// The migration script for the old system (commercial Endpoint Manager -> this module).
+			// Served as a download so nobody has to dig it out of the module directory.
+			$this->send_export_tool();
 			return;
 		}
 		if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST')

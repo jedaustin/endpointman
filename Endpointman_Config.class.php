@@ -1137,8 +1137,8 @@ class Endpointman_Config
 					{
 						$product_db->setName($family->getName());
 						$product_db->setShortName($family->getShortName());
-						$product_db->setLastModified($family->getLastModified());
-						$product_db->setConfigFiles($family->getConfigurationFiles());
+						$product_db->setLastModified((string) ($family->getLastModified() ?? ''));
+						$product_db->setConfigurationFiles((array) $family->getConfigurationFiles());
 					}
 					else
 					{
@@ -1565,8 +1565,8 @@ class Endpointman_Config
 						$out( sprintf(_("⚡ - Updating Family '%s'..."), $family->getShortName()), false);
 						$product_db->setName($family->getName());
 						$product_db->setShortName($family->getShortName());
-						$product_db->setLastModified($family->getLastModified());
-						$product_db->setConfigFiles($family->getConfigurationFiles());
+						$product_db->setLastModified((string) ($family->getLastModified() ?? ''));
+						$product_db->setConfigurationFiles((array) $family->getConfigurationFiles());
 					}
 					else
 					{

@@ -431,7 +431,19 @@ class ProvisionerModelDB extends ProvisionerBaseDB
 		{
 			return false;
 		}
-        return $this->updateQuery("endpointman_product_list", ['max_lines' => $lines], $this->id);
+        return $this->updateQuery("endpointman_model_list", ['max_lines' => $lines], $this->id);
+    }
+
+	/**
+	 * Sets the model name (the string the phone family knows it by, e.g. S505).
+	 */
+	public function setModel(string $model)
+    {
+        if (! $this->isExistID() || trim($model) === '')
+        {
+            return false;
+        }
+        return $this->updateQuery("endpointman_model_list", ['model' => trim($model)], $this->id);
     }
 
 

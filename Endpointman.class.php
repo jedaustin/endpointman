@@ -23,6 +23,7 @@ require_once('Endpointman_Config.class.php');
 require_once('Endpointman_Advanced.class.php');
 require_once('Endpointman_Templates.class.php');
 require_once('Endpointman_Devices.class.php');
+require_once('Endpointman_Import.class.php');
 
 #[\AllowDynamicProperties]
 class Endpointman extends FreePBX_Helpers implements BMO {

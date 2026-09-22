@@ -428,6 +428,30 @@ class Endpointman_Devices
 				$_SESSION[self::SEARCH_KEY] = $list;
 				break;
 
+			case 'import_upload':
+				$imp = new Endpointman_Import($this->epm);
+				$doc = $imp->load_upload($_FILES['import_file'] ?? array());
+				if (is_string($doc))
+				{
+					$this->epm->error['import'] = $doc;
+				}
+				else
+				{
+					$pv = $imp->preview($doc);
+					$this->epm->message['import'] = sprintf(_("Preview ready: %d phone(s) can be created, %d cannot. Nothing has been written yet."), $pv['stats']['create'], $pv['stats']['skip']);
+				}
+				break;
+
+			case 'import_commit':
+				$imp = new Endpointman_Import($this->epm);
+				$imp->commit((array) ($request['import_include'] ?? array()), (array) ($request['import_template'] ?? array()), !empty($request['import_rebuild']));
+				break;
+
+			case 'import_cancel':
+				(new Endpointman_Import($this->epm))->discard();
+				$this->epm->message['import'] = _("Import cancelled; nothing was written.");
+				break;
+
 			case 'add_selected':
 				$added = 0;
 				foreach ((array) ($request['add'] ?? array()) as $num)
@@ -583,6 +607,7 @@ class Endpointman_Devices
 			'config_location' => $config_location,
 			'srvip'           => (string) $epm->getConfig('srvip'),
 			'srvport'         => (string) $epm->getConfig('srvport', '5060'),
+			'import'          => (new Endpointman_Import($epm))->current_preview(),
 		);
 	}
 

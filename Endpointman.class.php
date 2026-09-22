@@ -3186,7 +3186,11 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 			$name = $displayname;
 		}
 
-		$sql = sprintf("INSERT INTO %s (mac, model, template_id) VALUES (%s, %d, %d)", self::TABLES['epm_mac_list'], $this->q($mac), (int) $model, (int) $template);
+		// every text column is NOT NULL without a default (strict-mode MariaDB rejects the row otherwise)
+		$sql = sprintf(
+			"INSERT INTO %s (mac, model, template_id, global_custom_cfg_data, global_user_cfg_data, config_files_override, global_settings_override, specific_settings) VALUES (%s, %d, %d, '', '', '', '', '')",
+			self::TABLES['epm_mac_list'], $this->q($mac), (int) $model, (int) $template
+		);
 		$this->eda->sql($sql);
 		$mac_id = (int) $this->eda->sql('SELECT LAST_INSERT_ID()', 'getOne');
 
@@ -3195,7 +3199,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 			$line = 1;
 		}
 		$sql = sprintf(
-			"INSERT INTO %s (mac_id, ext, line, description) VALUES (%d, %s, %d, %s)",
+			"INSERT INTO %s (mac_id, ext, line, description, ipei, custom_cfg_data, user_cfg_data) VALUES (%d, %s, %d, %s, '', '', '')",
 			self::TABLES['epm_line_list'], $mac_id, $this->q($ext), (int) $line, $this->q(mb_substr($name, 0, 20))
 		);
 		$this->eda->sql($sql);
@@ -3255,7 +3259,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 		}
 
 		$sql = sprintf(
-			"INSERT INTO %s (mac_id, ext, line, description) VALUES (%d, %s, %d, %s)",
+			"INSERT INTO %s (mac_id, ext, line, description, ipei, custom_cfg_data, user_cfg_data) VALUES (%d, %s, %d, %s, '', '', '')",
 			self::TABLES['epm_line_list'], $mac_id, $this->q($ext), (int) $line, $this->q(mb_substr($name, 0, 20))
 		);
 		$this->eda->sql($sql);

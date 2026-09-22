@@ -692,12 +692,12 @@ class ProvisionerBrandDB extends ProvisionerBaseDB
         {
             return false;
         }
+        // Returns the family row object whether or not it exists yet: update_brand() tests
+        // isExistID() itself to choose between UPDATE and INSERT. (It used to return false for
+        // an EXISTING family, so a brand update never refreshed its families or models and
+        // printed "Product 'N' for the brand ... is not exist!" for every one of them.)
         $product = new ProvisionerFamilyDB($this->parent, $this);
         $product->findBy('id', $product_id);
-        if ($product->isExistID())
-        {
-            return false;
-        }
         return $product;
     }
 

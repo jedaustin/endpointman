@@ -640,10 +640,12 @@ class ProvisionerFamily extends ProvisionerBase
                 throw new \Exception(sprintf(_("Failed to remove old firmware directory '%s' [%s]!"), $path_fw, __CLASS__));
             }
         }
-        if (! mkdir($path_fw, 0777, true) ) 
+        // The package itself carries the "firmware/" directory: PharData::extractTo() refuses to
+        // extract a directory that already exists, so only make sure the parent is there.
+        if (! file_exists($path_model) && ! mkdir($path_model, 0777, true) ) 
         {
             if ($noException) { return false; }
-            throw new \Exception(sprintf(_("Failed to create firmware directory '%s' [%s]!"), $path_fw, __CLASS__));
+            throw new \Exception(sprintf(_("Failed to create firmware directory '%s' [%s]!"), $path_model, __CLASS__));
         }
 
         try

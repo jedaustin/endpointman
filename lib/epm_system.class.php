@@ -550,7 +550,7 @@ class epm_system {
         try
         {
             $phar = new \PharData($tarFile);
-            $phar->extractTo($destinationDir);
+            $phar->extractTo($destinationDir, null, true);
         }
         catch (\UnexpectedValueException $e)
         {

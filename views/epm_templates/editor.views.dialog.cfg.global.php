@@ -59,6 +59,30 @@
 		</div>
 	</div>
 	<!--END IP address of phone server-->
+	<!--SIP port of phone server-->
+	<div class="element-container">
+		<div class="row">
+			<div class="col-md-12">
+				<div class="row">
+					<div class="form-group">
+						<div class="col-md-3">
+							<label class="control-label" for="srvport"><?php echo _("SIP port of phone server")?></label>
+							<i class="fa fa-question-circle fpbx-help-icon" data-for="srvport"></i>
+						</div>
+						<div class="col-md-9">
+							<input type="text" class="form-control" placeholder="<?php echo _("Empty = global setting"); ?>" id="srvport" name="srvport" value="">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="help-block fpbx-help-block" id="srvport-help"><?php echo _("Port the phones register to (1-65535). Leave empty to use the global setting from Advanced Settings."); ?></span>
+			</div>
+		</div>
+	</div>
+	<!--END SIP port of phone server-->
 	<!--Configuration Type-->
 	<div class="element-container">
 		<div class="row">

@@ -378,6 +378,13 @@ class Endpointman_Advanced
 										'onclick' => sprintf("epm_advanced_tab_setting_input_value_change_bt('#srvip', sValue = '%s', bSaveChange = true);", $_SERVER["SERVER_ADDR"]),
 									),
 								),
+								'srvport' => array(
+									'label' 	  => _("SIP port of phone server"),
+									'type' 		  => 'text',
+									'value' 	  => $this->epm->getConfig("srvport", "5060"),
+									'placeholder' => "5060",
+									'help' 		  => _("Port the phones register to on the PBX (1-65535). Available in templates as {\$server_port.line.X}. Default 5060; PJSIP on FreePBX 17 often listens on 5160."),
+								),
 								'intsrvip' => array(
 									'label' 	  => _("Internal IP address of phone server"),
 									'type' 		  => 'text',
@@ -855,6 +862,19 @@ class Endpointman_Advanced
 
 			case "intsrvip":
 				$this->epm->setConfig('intsrvip', trim($value));
+				break;
+
+			case "srvport":
+				$value = trim($value);
+				if ($value === '')
+				{
+					$value = '5060';
+				}
+				if (!ctype_digit($value) || (int) $value < 1 || (int) $value > 65535)
+				{
+					return array("status" => false, "message" => sprintf(_("Invalid SIP port '%s': must be a number between 1 and 65535."), $value));
+				}
+				$this->epm->setConfig('srvport', $value);
 				break;
 
 			case "tz":

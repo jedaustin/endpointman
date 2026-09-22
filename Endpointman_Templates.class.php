@@ -743,7 +743,7 @@ class Endpointman_Templates
     		$sql = "SELECT model FROM endpointman_mac_list WHERE id=" . $id;
     	}
     	$model_id = sql($sql, 'getOne');
-    	if (!$this->epm_config->sync_model($model_id)) {
+    	if (!$this->epm->sync_model($model_id)) {
     		die("unable to sync local template files - TYPE:" . $custom);
     	}
 		
@@ -821,7 +821,7 @@ class Endpointman_Templates
 
 
 		//TODO: He comentado esto ya que sync-model ya no existe!!!!!!!
-    	// if (!$this->epm_config->sync_model($model_id)) {
+    	// if (!$this->epm->sync_model($model_id)) {
     	// 	die("unable to sync local template files - TYPE:" . $custom);
     	// }
 		
@@ -882,7 +882,7 @@ class Endpointman_Templates
     
 		//TODO: He comentado esto ya que sync-model ya no existe!!!!!!!
     	//Make sure the model data from the local confg files are stored in the database and vice-versa. Serious errors will occur if the database is not in sync with the local file
-    	// if (!$this->epm_config->sync_model($model_id))
+    	// if (!$this->epm->sync_model($model_id))
 		// {
     	// 	die("unable to sync local template files - TYPE:" . $custom);
     	// }

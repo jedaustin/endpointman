@@ -342,13 +342,6 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 	 */
 	public function ajaxRequest($req, &$setting)
 	{
-		// ** Allow remote consultation with Postman **
-		// ********************************************
-		$setting['authenticate'] = false;
-		$setting['allowremote']  = true;
-		return true;
-		// ********************************************
-
 		$request 	= freepbxGetSanitizedRequest();
 
 		$data = array(
@@ -359,6 +352,12 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 
 		switch($data['module_sec'])
 		{
+			case "epm_ajax":
+				$setting['authenticate'] = true;
+				$setting['allowremote']  = false;
+				$return_status = in_array($req, array('model', 'template', 'mtemplate', 'template2', 'model_clone', 'lines'), true);
+			break;
+
 			case "epm_devices":
 				$return_status = $this->epm_devices->ajaxRequest($req, $setting);
 			break;
@@ -499,7 +498,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 								}
 								elseif(!empty($mac))
 								{
-									$sql   = sprintf("SELECT id FROM %s WHERE mac = '%s'", self::TABLES['epm_mac_list'], $this->epm_advanced->mac_check_clean($mac));
+									$sql   = sprintf("SELECT id FROM %s WHERE mac = '%s'", self::TABLES['epm_mac_list'], $this->system->mac_check_clean($mac));
 									$macid = $this->eda->sql($sql, 'getOne');
 									if($macid)
 									{
@@ -665,7 +664,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 		if (!empty($extdisplay))
 		{
 			$sql = sprintf("SELECT tech FROM %s WHERE id = %s", self::TABLES['devices'], $extdisplay);
-			// $tech = $this->endpoint->eda->sql($sql, 'getOne');
+			// $tech = $this->eda->sql($sql, 'getOne');
 			$tech = $this->eda->sql($sql, 'getOne');
 		}
 
@@ -715,7 +714,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 				unset($js);
 
 				// $sql = sprintf("SELECT mac_id, luid, line FROM %s WHERE ext = '%s'", self::TABLES['epm_line_list'], $extdisplay);
-				// $line_info = $this->endpoint->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+				// $line_info = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 				
 				$sql = sprintf("SELECT * FROM %s WHERE ext = '%s'", self::TABLES['epm_line_list'], $extdisplay);
 				$line_info = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
@@ -778,14 +777,14 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 					$cc->addjsfunc('model_change(value,macid)', $js);
 					unset($js);
 
-					$info = $this->endpoint->get_phone_info($line_info['mac_id']);
+					$info = $this->get_phone_info($line_info['mac_id']);
 
 					$brand_list = $this->brands_available($info['brand_id'], true);
 					if (!empty($info['brand_id']))
 					{
-						$model_list 	= $this->endpoint->models_available(NULL, $info['brand_id']);
+						$model_list 	= $this->models_available(NULL, $info['brand_id']);
 						$line_list		= $this->linesAvailable($line_info['luid']);
-						$template_list 	= $this->endpoint->display_templates($info['product_id']);
+						$template_list 	= $this->display_templates($info['product_id']);
 					}
 					else
 					{
@@ -1002,23 +1001,17 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 			$delete = $request['epm_delete'] ?? null;
 
 
-			$path_funciones_inf = $this->system->buildPath($this->MODULE_PATH, 'includes/functions.inc');
-
-			if (file_exists($path_funciones_inf))
+			if (true)
 			{
-				require_once($path_funciones_inf);
-
-				$this->endpoint = new \endpointmanager($this);
-				ini_set('display_errors', 0);
 
 				switch($action)
 				{
 					case "del":
 						$sql = sprintf("SELECT mac_id, luid FROM %s WHERE ext = %s", self::TABLES['epm_line_list'], $extdisplay);
-						// $macid = $this->endpoint->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+						// $macid = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 						$macid = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 						if ($macid) {
-							$this->endpoint->delete_line($macid['luid'], TRUE);
+							$this->delete_line($macid['luid'], TRUE);
 						}
 						break;
 
@@ -1027,10 +1020,10 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 						if (isset($delete))
 						{
 							$sql = sprintf("SELECT mac_id, luid FROM %s WHERE ext = %s", self::TABLES['epm_line_list'], $extdisplay);
-							// $macid = $this->endpoint->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+							// $macid = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 							$macid = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 							if ($macid) {
-								$this->endpoint->delete_line($macid['luid'], TRUE);
+								$this->delete_line($macid['luid'], TRUE);
 							}
 						}
 	
@@ -1056,7 +1049,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 								{
 									//SQL to get the Description of the  extension from the extension table
 									$sql = sprintf("SELECT name FROM %s WHERE extension = '%s'", "users", $request['deviceuser']);
-									// $name_o = $this->endpoint->eda->sql($sql, 'getOne');
+									// $name_o = $this->eda->sql($sql, 'getOne');
 									$name_o = $this->eda->sql($sql, 'getOne');
 									if($name_o) {
 										$name = $name_o;
@@ -1066,33 +1059,25 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 	
 							$reboot = isset($request['epm_reboot']) ? $request['epm_reboot'] : null;
 	
-							if ($this->epm_advanced->mac_check_clean($mac))
+							if ($this->system->mac_check_clean($mac))
 							{
-								$sql = sprintf("SELECT id FROM %s WHERE mac = '%s'", "endpointman_mac_list", $this->epm_advanced->mac_check_clean($mac));
-								// $macid = $this->endpoint->eda->sql($sql, 'getOne');
+								$sql = sprintf("SELECT id FROM %s WHERE mac = '%s'", "endpointman_mac_list", $this->system->mac_check_clean($mac));
+								// $macid = $this->eda->sql($sql, 'getOne');
 								$macid = $this->eda->sql($sql, 'getOne');
 								if ($macid)
 								{
 									//In Database already
 	
 									$sql = sprintf('SELECT * FROM %s WHERE ext = %s AND mac_id = %s', self::TABLES['epm_line_list'], $extdisplay, $macid);
-									// $lines_list = & $this->endpoint->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+									// $lines_list = & $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 									$lines_list = & $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
 	
 									if (($lines_list) AND (isset($model)) AND (isset($line)) AND (!isset($delete)) AND (isset($temp)))
 									{
 										//Modifying line already in the database
-										$this->endpoint->update_device($macid, $model, $temp, $lines_list['luid'], $name, $lines_list['line']);
+										$this->update_device($macid, $model, $temp, $lines_list['luid'], $name, $lines_list['line']);
 	
-										$row = $this->endpoint->get_phone_info($macid);
-										if (isset($reboot))
-										{
-											$this->endpoint->prepare_configs($row);
-										}
-										else
-										{
-											$this->endpoint->prepare_configs($row, FALSE);
-										}
+										$this->rebuild_device($macid, isset($reboot));
 									}
 									elseif ((isset($model)) AND (!isset($delete)) AND (isset($line)) AND (isset($temp)))
 									{
@@ -1100,36 +1085,26 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 	
 										if (empty($line))
 										{
-											$this->endpoint->add_line($macid, NULL, $extdisplay, $name);
+											$this->add_line($macid, NULL, $extdisplay, $name);
 										}
 										else
 										{
-											$this->endpoint->add_line($macid, $line, $extdisplay, $name);
+											$this->add_line($macid, $line, $extdisplay, $name);
 										}
 	
-										$this->endpoint->update_device($macid, $model, $temp, NULL, NULL, NULL, FALSE);
+										$this->update_device($macid, $model, $temp, NULL, NULL, NULL, FALSE);
 	
-										$row = $this->endpoint->get_phone_info($macid);
-										if (isset($reboot))
-										{
-											$this->endpoint->prepare_configs($row);
-										}
-										else
-										{
-											$this->endpoint->prepare_configs($row, FALSE);
-										}
+										$this->rebuild_device($macid, isset($reboot));
 									}
 								}
 								elseif (!isset($delete))
 								{
 									//Add Extension/Phone to database
-									$mac_id = $this->endpoint->add_device($mac, $model, $extdisplay, $temp, NULL, $name);
+									$mac_id = $this->add_device($mac, $model, $extdisplay, $temp, NULL, $name);
 	
 									if ($mac_id)
 									{
-										debug('Write files?');
-										$row = $this->endpoint->get_phone_info($mac_id);
-										$this->endpoint->prepare_configs($row);
+										$this->rebuild_device($mac_id, isset($reboot));
 									}
 								}
 							}
@@ -1141,10 +1116,6 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 				// Add the 'process' function - this gets called when the page is loaded, to hook into
 				// displaying stuff on the page.
 				// $currentcomponent->addguifunc('endpointman_configpageload');
-			}
-			else
-			{
-				//System can't find the include file.
 			}
     	}
 
@@ -1262,6 +1233,11 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 			case "main.advanced":
 				$this->epm_advanced->showPage($data);
 				$data_return = load_view(__DIR__."/views/page.main.advanced.php", $data);
+				break;
+
+			case "main.devices":
+				$this->epm_devices->showPage($data);
+				$data_return = load_view(__DIR__."/views/page.main.devices.php", $data);
 				break;
 
 			default:
@@ -2886,1319 +2862,1240 @@ class Endpointman extends FreePBX_Helpers implements BMO {
         echo !empty($matches[0]) ? 'installed' : 'nope';
     }
 
-	
+	/*********************************************************************************
+	 * Device / line / provisioning engine.
+	 *
+	 * Revived from the code that release/17.0-dev carried as a block comment
+	 * ("pending revision") after the _old/ move, ported to the current class layout
+	 * (eda, system, getConfig, packages) and to PHP 8.2: no echo/out() from inside
+	 * the engine, every failure lands in $this->error[...] and returns false.
+	 *********************************************************************************/
 
-
-
-
-
-	private function linesAvailable($lineid=NULL, $macid=NULL)
+	/**
+	 * Quote a value for direct use in SQL built by the legacy engine.
+	 */
+	private function q($value)
 	{
-        if (isset($lineid))
+		return $this->db->quote((string) $value);
+	}
+
+	/**
+	 * Run a callable with PHP notices/warnings/deprecations turned into debug
+	 * messages instead of exceptions. The Provisioner backend (_ep_phone_modules)
+	 * is 2012-era code that is noisy under PHP 8 but functionally fine; FreePBX
+	 * installs an error handler that would otherwise abort the whole request.
+	 */
+	private function runLegacy(callable $fn)
+	{
+		$collected = array();
+		set_error_handler(function ($errno, $errstr, $errfile = '', $errline = 0) use (&$collected) {
+			$collected[] = sprintf('%s [%s:%s]', $errstr, basename((string) $errfile), $errline);
+			return true;
+		}, E_WARNING | E_NOTICE | E_DEPRECATED | E_USER_WARNING | E_USER_NOTICE | E_USER_DEPRECATED | E_STRICT);
+		try
 		{
-            $sql = sprintf("SELECT max_lines FROM %s as eml WHERE id = (SELECT emacl.model FROM %s as emacl, %s as ell WHERE ell.luid = %s AND ell.mac_id = emacl.id)", self::TABLES['epm_model_list'], self::TABLES['epm_mac_list'], self::TABLES['epm_line_list'], $lineid);
-
-            $sql_l = sprintf("SELECT line, mac_id FROM `%s` WHERE luid = %s", self::TABLES['epm_line_list'], $lineid);
-            $line = $this->eda->sql($sql_l, 'getRow', \PDO::FETCH_ASSOC);
-
-            $sql_lu = sprintf("SELECT line FROM %s WHERE mac_id = %s", self::TABLES['epm_line_list'], $line['mac_id']);
-        }
-		elseif (isset($macid))
+			$result = $fn();
+		}
+		finally
 		{
-            $sql = sprintf("SELECT max_lines FROM %s WHERE id = (SELECT model FROM %s WHERE id =%s)", self::TABLES['epm_model_list'], self::TABLES['epm_mac_list'], $macid);
-            $sql_lu = sprintf("SELECT line FROM %s WHERE mac_id = %s", self::TABLES['epm_line_list'], $macid);
-
-            $line['line'] = 0;
-        }
-
-        $max_lines  = $this->eda->sql($sql, 'getOne');
-        $lines_used = $this->eda->sql($sql_lu, 'getAll');
-
-        for ($i = 1; $i <= $max_lines; $i++)
+			restore_error_handler();
+		}
+		if (!empty($collected) && $this->getConfig('debug'))
 		{
-            if ($i == $line['line'])
+			$this->message['legacy_notices'] = implode('<br />', array_unique($collected));
+		}
+		return $result;
+	}
+
+	/**
+	 * Lines (1..max_lines of the model) that are still free on a device.
+	 * @param int|null $lineid luid of an existing line (its own line number comes back selected)
+	 * @param int|null $macid  endpointman_mac_list.id
+	 * @return array|false  [n => ['value'=>n,'text'=>n,'selected'?]] or false when nothing is free
+	 */
+	public function linesAvailable($lineid = NULL, $macid = NULL)
+	{
+		$line = array('line' => 0, 'mac_id' => null);
+		if (!empty($lineid))
+		{
+			$sql_l = sprintf("SELECT line, mac_id FROM %s WHERE luid = %d", self::TABLES['epm_line_list'], (int) $lineid);
+			$row   = $this->eda->sql($sql_l, 'getRow', \PDO::FETCH_ASSOC);
+			if (empty($row))
 			{
-                $temp[$i]['value'] = $i;
-                $temp[$i]['text'] = $i;
-                $temp[$i]['selected'] = "selected";
-            }
-			else
-			{
-                if (! self::in_array_recursive($i, $lines_used))
-				{
-                    $temp[$i]['value'] = $i;
-                    $temp[$i]['text']  = $i;
-                }
-            }
-        }
-        if (isset($temp))
+				return false;
+			}
+			$line  = $row;
+			$macid = $row['mac_id'];
+		}
+		if (empty($macid))
 		{
-            return($temp);
-        }
+			return false;
+		}
+
+		$sql        = sprintf("SELECT max_lines FROM %s WHERE id = (SELECT model FROM %s WHERE id = %d)", self::TABLES['epm_model_list'], self::TABLES['epm_mac_list'], (int) $macid);
+		$sql_lu     = sprintf("SELECT line FROM %s WHERE mac_id = %d", self::TABLES['epm_line_list'], (int) $macid);
+		$max_lines  = (int) $this->eda->sql($sql, 'getOne');
+		$lines_used = $this->eda->sql($sql_lu, 'getAll', \PDO::FETCH_ASSOC);
+		$used       = array_map(function ($r) { return (int) $r['line']; }, is_array($lines_used) ? $lines_used : array());
+
+		$temp = array();
+		for ($i = 1; $i <= $max_lines; $i++)
+		{
+			if ($i == (int) $line['line'])
+			{
+				$temp[$i] = array('value' => $i, 'text' => $i, 'selected' => 'selected');
+			}
+			elseif (!in_array($i, $used, true))
+			{
+				$temp[$i] = array('value' => $i, 'text' => $i);
+			}
+		}
+		return empty($temp) ? false : $temp;
+	}
+
+	/**
+	 * Models available for a select box, optionally filtered by brand or product.
+	 * @return array|false
+	 */
+	public function models_available($model = NULL, $brand = NULL, $product = NULL)
+	{
+		if (!empty($brand))
+		{
+			$result = $this->eda->all_models_by_brand((int) $brand);
+		}
+		elseif (!empty($product))
+		{
+			$result = $this->eda->all_models_by_product((int) $product);
+		}
 		else
 		{
-            return FALSE;
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-
-
-    function add_device($mac, $model, $ext, $template=NULL, $line=NULL, $displayname=NULL) {
-    	$mac = $this->mac_check_clean($mac);
-    	if ($mac) {
-    		if (empty($model)) {
-//$this->error['add_device'] =
-			out(_("You Must Select A Model From the Drop Down") . "!");
-    			return(FALSE);
-    		} elseif (empty($ext)) {
-//$this->error['add_device'] =
-			out(_("You Must Select an Extension/Device From the Drop Down") . "!");
-    			return(FALSE);
-    		} else {
-    			if ($this->epm_config->sync_model($model)) {
-    				$sql = "SELECT id,template_id FROM endpointman_mac_list WHERE mac = '" . $mac . "'";
-    				$dup = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-
-    				if ($dup) {
-    					if (!isset($template)) {
-    						$template = $dup['template_id'];
-    					}
-
-    					$sql = "UPDATE endpointman_mac_list SET model = " . $model . ", template_id =  " . $template . " WHERE id = " . $dup['id'];
-    					sql($sql);
-						$return = $this->add_line($dup['id'], $line, $ext);
-    					if ($return) {
-    						return($return);
-    					} else {
-    						return(FALSE);
-    					}
-    				} else {
-    					if (!isset($template)) {
-    						$template = 0;
-    					}
-
-    					$sql = "SELECT mac_id FROM " . self::TABLES['epm_line_list'] . " WHERE ext = " . $ext;
-    					$used = sql($sql, 'getOne');
-
-					if (($used) AND (! $this->getConfig('show_all_registrations'))) {
-//$this->error['add_device'] =
-						out(_("You can't assign the same user to multiple devices") . "!");
-    						return(FALSE);
-    					}
-
-    					if (!isset($displayname)) {
-    						$sql = 'SELECT description FROM devices WHERE id = ' . $ext;
-    						$name = sql($sql, 'getOne');
-							$name = "123";
-							$displayname = "123";
-    					} else {
-    						$name = $displayname;
-    					}
-
-    					$sql = 'SELECT endpointman_product_list. * , endpointman_model_list.template_data, endpointman_brand_list.directory FROM endpointman_model_list, endpointman_brand_list, endpointman_product_list WHERE endpointman_model_list.id =  \'' . $model . '\' AND endpointman_model_list.brand = endpointman_brand_list.id AND endpointman_model_list.product_id = endpointman_product_list.id';
-    					$row = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-
-    					$sql = "INSERT INTO `endpointman_mac_list` (`mac`, `model`, `template_id`) VALUES ('" . $mac . "', '" . $model . "', '" . $template . "')";
-    					sql($sql);
-
-    					$sql = 'SELECT last_insert_id()';
-    					$ext_id = sql($sql, 'getOne');
-
-    					if (empty($line)) {
-    						$line = 1;
-    					}
-
-    					$sql = "INSERT INTO `". self::TABLES['epm_line_list'] ."` (`mac_id`, `ext`, `line`, `description`) VALUES ('" . $ext_id . "', '" . $ext . "', '" . $line . "', '" . addslashes($name) . "')";
-    					sql($sql);
-
-//$this->message['add_device'][] =
-					out(_("Added ") . $name . _(" to line ") . $line);
-    					return($ext_id);
-    				}
-    			} else {
-//$this->error['Sync_Model'] =
-				out(_("Invalid Model Selected, Can't Sync System") . "!");
-    				return(FALSE);
-    			}
-    		}
-    	} else {
-//$this->error['add_device'] =
-		out(_("Invalid MAC Address") . "!");
-    		return(FALSE);
-    	}
-    }
-
-
-    function add_line($mac_id, $line=NULL, $ext=NULL, $displayname=NULL) {
-    	if ((!isset($line)) AND (!isset($ext))) {
-    		if ($this->linesAvailable(NULL, $mac_id)) {
-    			if ($this->eda->all_unused_registrations()) {
-    				$sql = 'SELECT * FROM '.self::TABLES['epm_line_list'].' WHERE mac_id = ' . $mac_id;
-    				$lines_list = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-
-    				foreach ($lines_list as $row) {
-    					$sql = "SELECT description FROM devices WHERE id = " . $row['ext'];
-    					$name = sql($sql, 'getOne');
-
-    					$sql = "UPDATE ".self::TABLES['epm_line_list']." SET line = '" . $row['line'] . "', ext = '" . $row['ext'] . "', description = '" . $this->eda->escapeSimple($name) . "' WHERE luid =  " . $row['luid'];
-    					sql($sql);
-    				}
-
-    				$reg = array_values($this->display_registration_list());
-    				$lines = array_values($this->linesAvailable(NULL, $mac_id));
-
-    				$sql = "SELECT description FROM devices WHERE id = " . $reg[0]['value'];
-    				$name = sql($sql, 'getOne');
-
-    				$sql = "INSERT INTO `".self::TABLES['epm_line_list']."` (`mac_id`, `ext`, `line`, `description`) VALUES ('" . $mac_id . "', '" . $reg[0]['value'] . "', '" . $lines[0]['value'] . "', '" . addslashes($name) . "')";
-    				sql($sql);
-
-//$this->message['add_line'] =
-				out(_("Added '<i>") . $name . _("</i>' to line '<i>") . $lines[0]['value'] . _("</i>' on device '<i>") . $reg[0]['value'] . _("</i>' <br/> Configuration Files will not be Generated until you click Save!"));
-    				return($mac_id);
-    			} else {
-//$this->error['add_line'] =
-				out(_("No Devices/Extensions Left to Add") . "!");
-    				return(FALSE);
-    			}
-    		} else {
-//$this->error['add_line'] =
-			out(_("No Lines Left to Add") . "!");
-    			return(FALSE);
-    		}
-    	} elseif ((!isset($line)) AND (isset($ext))) {
-    		if ($this->linesAvailable(NULL, $mac_id)) {
-    			if ($this->eda->all_unused_registrations()) {
-    				$lines = array_values($this->linesAvailable(NULL, $mac_id));
-
-    				$sql = "INSERT INTO `endpointman_line_list` (`mac_id`, `ext`, `line`, `description`) VALUES ('" . $mac_id . "', '" . $ext . "', '" . $lines[0]['value'] . "', '" . addslashes($displayname) . "')";
-    				sql($sql);
-
-//$this->message['add_line'] =
-				out(_("Added '<i>") . $name . _("</i>' to line '<i>") . $lines[0]['value'] . _("</i>' on device '<i>") . $reg[0]['value'] . _("</i>' <br/> Configuration Files will not be Generated until you click Save!"));
-    				return($mac_id);
-    			} else {
-//$this->error['add_line'] =
-				out(_("No Devices/Extensions Left to Add") . "!");
-    				return(FALSE);
-    			}
-    		} else {
-//$this->error['add_line'] =
-			out(_("No Lines Left to Add") . "!");
-    			return(FALSE);
-    		}
-    	} elseif ((isset($line)) AND (isset($ext))) {
-    		$sql = "SELECT luid FROM endpointman_line_list WHERE line = '" . $line . "' AND mac_id = " . $mac_id;
-    		$luid = sql($sql, 'getOne');
-    		if ($luid) {
-//$this->error['add_line'] =
-			out(_("This line has already been assigned!"));
-    			return(FALSE);
-    		} else {
-    			if (!isset($displayname)) {
-    				$sql = 'SELECT description FROM devices WHERE id = ' . $ext;
-    				$name = sql($sql, 'getOne');
-    			} else {
-    				$name = $displayname;
-    			}
-
-    			$sql = "INSERT INTO `endpointman_line_list` (`mac_id`, `ext`, `line`, `description`) VALUES ('" . $mac_id . "', '" . $ext . "', '" . $line . "', '" . addslashes($name) . "')";
-    			sql($sql);
-//$this->message['add_line'] =
-			out(_("Added ") . $name . _(" to line ") . $line . "<br/>");
-    			return($mac_id);
-    		}
-    	}
-    }
-
-
-    
-
-
-
-
-     * Display all unused registrations from whatever manager we are using!
-     * @return <type>
-     */
-	     /**
-    function display_registration_list($line_id=NULL) {
-
-    	if (isset($line_id)) {
-    		$result = $this->eda->all_unused_registrations();
-    		$line_data = $this->eda->get_line_information($line_id);
-    	} else {
-    		$result = $this->eda->all_unused_registrations();
-    		$line_data = NULL;
-    	}
-
-    	$i = 1;
-    	$temp = array();
-    	foreach ($result as $row) {
-    		$temp[$i]['value'] = $row['id'];
-    		$temp[$i]['text'] = $row['id'] . " --- " . $row['description'];
-    		$i++;
-    	}
-
-    	if (isset($line_data)) {
-    		$temp[$i]['value'] = $line_data['ext'];
-    		$temp[$i]['text'] = $line_data['ext'] . " --- " . $line_data['description'];
-    		$temp[$i]['selected'] = "selected";
-    	}
-
-    	return($temp);
-    }
-
-
-
-     * Send this function an ID from the mac devices list table and you'll get all the information we have on that particular phone
-     * @param integer $mac_id ID number reference from the MySQL database referencing the table endpointman_mac_list
-     * @return array
-     * @example
-     * Final Output will look something similar to this
-     *  Array
-     *       (
-     *            [config_files_override] =>
-     *            [global_user_cfg_data] => N;
-     *            [model_id] => 213
-     *            [brand_id] => 2
-     *            [name] => Grandstream
-     *            [directory] => grandstream
-     *            [model] => GXP2000
-     *            [mac] => 000B820D0050
-     *            [template_id] => 0
-     *            [global_custom_cfg_data] => Serialized Data (Changed Template Values)
-     *            [long_name] => GXP Enterprise IP series [280,1200,2000,2010,2020]
-     *            [product_id] => 21
-     *            [cfg_dir] => gxp
-     *            [cfg_ver] => 1.5
-     *            [template_data] => Serialized Data (The default Template Values)
-     *            [enabled] => 1
-     *            [line] => Array
-     *                (
-     *                    [1] => Array
-     *                        (
-     *                            [luid] => 2
-     *                            [mac_id] => 2
-     *                            [line] => 1
-     *                            [ext] => 1000
-     *                            [description] => Description
-     *                            [custom_cfg_data] =>
-     *                            [user_cfg_data] =>
-     *                            [secret] => secret
-     *                            [id] => 1000
-     *                            [tech] => sip
-     *                            [dial] => SIP/1000
-     *                            [devicetype] => fixed
-     *                            [user] => 1000
-     *                            [emergency_cid] =>
-     *                        )
-     *                )
-     *         )
-
-    function get_phone_info($mac_id=NULL) {
-    	//You could screw up a phone if the mac_id is blank
-    	if (!isset($mac_id)) {
-//$this->error['get_phone_info'] =
-		out(_("Mac ID is not set"));
-    		return(FALSE);
-    	}
-    	$sql = "SELECT id FROM endpointman_mac_list WHERE model > 0 AND id =" . $mac_id;
-
-    	//$res = sql($sql);
-		$res = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-    	if (count(array($res))) {
-    		//Returns Brand Name, Brand Directory, Model Name, Mac Address, Extension (FreePBX), Custom Configuration Template, Custom Configuration Data, Product Name, Product ID, Product Configuration Directory, Product Configuration Version, Product XML name,
-    		$sql = "SELECT endpointman_mac_list.specific_settings, endpointman_mac_list.config_files_override, endpointman_mac_list.global_user_cfg_data, endpointman_model_list.id as model_id, endpointman_brand_list.id as brand_id, endpointman_brand_list.name, endpointman_brand_list.directory, endpointman_model_list.model, endpointman_mac_list.mac, endpointman_mac_list.template_id, endpointman_mac_list.global_custom_cfg_data, endpointman_product_list.long_name, endpointman_product_list.id as product_id, endpointman_product_list.cfg_dir, endpointman_product_list.cfg_ver, endpointman_model_list.template_data, endpointman_model_list.enabled, endpointman_mac_list.global_settings_override FROM endpointman_line_list, endpointman_mac_list, endpointman_model_list, endpointman_brand_list, endpointman_product_list WHERE endpointman_mac_list.model = endpointman_model_list.id AND endpointman_brand_list.id = endpointman_model_list.brand AND endpointman_product_list.id = endpointman_model_list.product_id AND endpointman_mac_list.id = endpointman_line_list.mac_id AND endpointman_mac_list.id = " . $mac_id;
-    		$phone_info = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-
-    		if (!$phone_info) {
-//$this->error['get_phone_info'] =
-			out(_("Error with SQL Statement"));
-    		}
-
-    		//If there is a template associated with this phone then pull that information and put it into the array
-    		if ($phone_info['template_id'] > 0) {
-    			$sql = "SELECT name, global_custom_cfg_data, config_files_override, global_settings_override FROM endpointman_template_list WHERE id = " . $phone_info['template_id'];
-    			$phone_info['template_data_info'] = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-    		}
-
-    		$sql = "SELECT endpointman_line_list.*, sip.data as secret, devices.*, endpointman_line_list.description AS epm_description FROM endpointman_line_list, sip, devices WHERE endpointman_line_list.ext = devices.id AND endpointman_line_list.ext = sip.id AND sip.keyword = 'secret' AND mac_id = " . $mac_id . " ORDER BY endpointman_line_list.line ASC";
-    		$lines_info = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-    		foreach ($lines_info as $line) {
-    			$phone_info['line'][$line['line']] = $line;
-    			$phone_info['line'][$line['line']]['description'] = $line['epm_description'];
-    			$phone_info['line'][$line['line']]['user_extension'] = $line['user'];
-    		}
-    	} else {
-    		$sql = "SELECT id, mac FROM endpointman_mac_list WHERE id =" . $mac_id;
-    		//Phone is unknown, we need to display this to the end user so that they can make corrections
-    		$row = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-
+			$result = $this->eda->all_models();
+		}
+
+		$temp = array();
+		$i = 1;
+		foreach ((array) $result as $row)
+		{
+			$temp[$i] = array('value' => $row['id'], 'text' => $row['model'], 'selected' => ($row['id'] == $model) ? 'selected' : 0);
+			$i++;
+		}
+		if (empty($temp))
+		{
+			$this->error['modelsAvailable'] = _("You need to enable at least ONE model");
+			return false;
+		}
+		return $temp;
+	}
+
+	/**
+	 * Registrations (devices) not yet mapped to a phone, for a select box.
+	 * When $line_id is given, that line's own extension is appended and selected.
+	 */
+	public function display_registration_list($line_id = NULL)
+	{
+		$result    = $this->eda->all_unused_registrations();
+		$line_data = !empty($line_id) ? $this->eda->get_line_information((int) $line_id) : NULL;
+
+		$i    = 1;
+		$temp = array();
+		foreach ((array) $result as $row)
+		{
+			$temp[$i] = array('value' => $row['id'], 'text' => $row['id'] . " --- " . $row['description']);
+			$i++;
+		}
+		if (!empty($line_data))
+		{
+			$sql  = sprintf("SELECT description FROM %s WHERE id = %s", self::TABLES['devices'], $this->q($line_data['ext']));
+			$desc = $this->eda->sql($sql, 'getOne');
+			$temp[$i] = array('value' => $line_data['ext'], 'text' => $line_data['ext'] . " --- " . ($desc ?: $line_data['description']), 'selected' => 'selected');
+		}
+		return $temp;
+	}
+
+	/**
+	 * Templates of a product for a select box, plus the "Custom..." entry (value 0).
+	 */
+	public function display_templates($product_id, $temp_select = NULL)
+	{
+		$sql  = sprintf("SELECT id, name FROM %s WHERE product_id = %d ORDER BY name", self::TABLES['epm_template_list'], (int) $product_id);
+		$data = $this->eda->sql($sql, 'getAll', \PDO::FETCH_ASSOC);
+
+		$temp = array();
+		$i = 0;
+		foreach ((array) $data as $row)
+		{
+			$temp[$i] = array('value' => $row['id'], 'text' => $row['name']);
+			if ($row['id'] == $temp_select)
+			{
+				$temp[$i]['selected'] = 'selected';
+			}
+			$i++;
+		}
+		$temp[$i] = array('value' => 0, 'text' => _("Custom..."));
+		if ((string) $temp_select === '0')
+		{
+			$temp[$i]['selected'] = 'selected';
+		}
+		return $temp;
+	}
+
+	/**
+	 * Brand that owns the OUI of a MAC address.
+	 * @return array|false ['id' => brand id or 0, 'name' => name or "Unknown"]
+	 */
+	public function get_brand_from_mac($mac)
+	{
+		$clean = $this->system->mac_check_clean($mac);
+		if (!$clean)
+		{
+			return false;
+		}
+		$oui = substr($clean, 0, 6);
+		$sql = sprintf(
+			"SELECT b.name, b.id FROM %s AS o, %s AS b WHERE o.oui = %s AND b.id = o.brand AND b.installed = 1 LIMIT 1",
+			self::TABLES['epm_oui_list'], self::TABLES['epm_brands_list'], $this->q($oui)
+		);
+		$brand = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+		if (empty($brand))
+		{
+			return array('id' => 0, 'name' => _("Unknown"));
+		}
+		return array('id' => $brand['id'], 'name' => $brand['name']);
+	}
+
+	public function retrieve_device_by_mac($mac)
+	{
+		$clean = $this->system->mac_check_clean($mac);
+		if (!$clean)
+		{
+			return false;
+		}
+		$sql = sprintf("SELECT id FROM %s WHERE mac = %s", self::TABLES['epm_mac_list'], $this->q($clean));
+		return $this->eda->sql($sql, 'getOne');
+	}
+
+	public function retrieve_device_by_ext($ext)
+	{
+		$sql = sprintf("SELECT DISTINCT mac_id FROM %s WHERE ext = %s", self::TABLES['epm_line_list'], $this->q($ext));
+		return $this->eda->sql($sql, 'getOne');
+	}
+
+	/**
+	 * Check that a model can be provisioned: it exists, its brand and family
+	 * directories are installed and the family JSON is present. The model's
+	 * template_data is filled by the Package Manager at install time
+	 * (ProvisionerModel::importTemplates), so nothing is rewritten here.
+	 */
+	public function sync_model($model)
+	{
+		if (empty($model))
+		{
+			$this->error['sync_model'] = _("No model given");
+			return false;
+		}
+		$sql = sprintf(
+			"SELECT m.id, m.model, m.template_data, p.cfg_dir, b.directory FROM %s AS m, %s AS p, %s AS b WHERE m.id = %d AND p.id = m.product_id AND b.id = m.brand",
+			self::TABLES['epm_model_list'], self::TABLES['epm_product_list'], self::TABLES['epm_brands_list'], (int) $model
+		);
+		$row = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+		if (empty($row))
+		{
+			$this->error['sync_model'] = _("Model not found in the database");
+			return false;
+		}
+		$family_dir = $this->system->buildPath($this->PHONE_MODULES_PATH, 'endpoint', $row['directory'], $row['cfg_dir']);
+		if (!is_dir($this->system->buildPath($this->PHONE_MODULES_PATH, 'endpoint', $row['directory'])))
+		{
+			$this->error['sync_model'] = sprintf(_("Brand directory '%s' does not exist, install the brand package first"), $row['directory']);
+			return false;
+		}
+		if (!is_dir($family_dir) || !file_exists($this->system->buildPath($family_dir, 'family_data.json')))
+		{
+			$this->error['sync_model'] = sprintf(_("Product directory '%s' or its family_data.json is missing"), $row['cfg_dir']);
+			return false;
+		}
+		if (empty($row['template_data']))
+		{
+			$this->error['sync_model'] = sprintf(_("Model '%s' has no template data, reinstall its brand package"), $row['model']);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Add a phone (or a line to an existing phone with the same MAC).
+	 * @return int|false endpointman_mac_list.id
+	 */
+	public function add_device($mac, $model, $ext, $template = NULL, $line = NULL, $displayname = NULL)
+	{
+		$mac = $this->system->mac_check_clean($mac);
+		if (!$mac)
+		{
+			$this->error['add_device'] = _("Invalid MAC Address") . "!";
+			return false;
+		}
+		if (empty($model))
+		{
+			$this->error['add_device'] = _("You Must Select A Model From the Drop Down") . "!";
+			return false;
+		}
+		if (empty($ext))
+		{
+			$this->error['add_device'] = _("You Must Select an Extension/Device From the Drop Down") . "!";
+			return false;
+		}
+		if (!$this->sync_model($model))
+		{
+			return false;
+		}
+
+		$sql = sprintf("SELECT id, template_id FROM %s WHERE mac = %s", self::TABLES['epm_mac_list'], $this->q($mac));
+		$dup = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+		if (!empty($dup))
+		{
+			if (!isset($template) || $template === '')
+			{
+				$template = $dup['template_id'];
+			}
+			$sql = sprintf("UPDATE %s SET model = %d, template_id = %d WHERE id = %d", self::TABLES['epm_mac_list'], (int) $model, (int) $template, (int) $dup['id']);
+			$this->eda->sql($sql);
+			return $this->add_line($dup['id'], $line, $ext, $displayname) ? (int) $dup['id'] : false;
+		}
+
+		if (!isset($template) || $template === '')
+		{
+			$template = 0;
+		}
+
+		$sql  = sprintf("SELECT mac_id FROM %s WHERE ext = %s", self::TABLES['epm_line_list'], $this->q($ext));
+		$used = $this->eda->sql($sql, 'getOne');
+		if ($used && !$this->getConfig('show_all_registrations'))
+		{
+			$this->error['add_device'] = _("You can't assign the same user to multiple devices") . "!";
+			return false;
+		}
+
+		if (!isset($displayname) || $displayname === '')
+		{
+			$sql  = sprintf("SELECT description FROM %s WHERE id = %s", self::TABLES['devices'], $this->q($ext));
+			$name = (string) $this->eda->sql($sql, 'getOne');
+		}
+		else
+		{
+			$name = $displayname;
+		}
+
+		$sql = sprintf("INSERT INTO %s (mac, model, template_id) VALUES (%s, %d, %d)", self::TABLES['epm_mac_list'], $this->q($mac), (int) $model, (int) $template);
+		$this->eda->sql($sql);
+		$mac_id = (int) $this->eda->sql('SELECT LAST_INSERT_ID()', 'getOne');
+
+		if (empty($line))
+		{
+			$line = 1;
+		}
+		$sql = sprintf(
+			"INSERT INTO %s (mac_id, ext, line, description) VALUES (%d, %s, %d, %s)",
+			self::TABLES['epm_line_list'], $mac_id, $this->q($ext), (int) $line, $this->q(mb_substr($name, 0, 20))
+		);
+		$this->eda->sql($sql);
+
+		$this->message['add_device'] = sprintf(_("Added %s to line %s"), $name, $line);
+		return $mac_id;
+	}
+
+	/**
+	 * Add a line to an existing phone. With no $line the next free line is used,
+	 * with no $ext the first unused registration is used.
+	 * @return int|false mac_id
+	 */
+	public function add_line($mac_id, $line = NULL, $ext = NULL, $displayname = NULL)
+	{
+		$mac_id = (int) $mac_id;
+		$lines  = $this->linesAvailable(NULL, $mac_id);
+		if ($lines === false)
+		{
+			$this->error['add_line'] = _("No Lines Left to Add") . "!";
+			return false;
+		}
+		$lines = array_values($lines);
+
+		if (empty($ext))
+		{
+			$reg = $this->eda->all_unused_registrations();
+			if (empty($reg))
+			{
+				$this->error['add_line'] = _("No Devices/Extensions Left to Add") . "!";
+				return false;
+			}
+			$ext = $reg[0]['id'];
+		}
+		if (empty($line))
+		{
+			$line = $lines[0]['value'];
+		}
+		else
+		{
+			$sql  = sprintf("SELECT luid FROM %s WHERE line = %d AND mac_id = %d", self::TABLES['epm_line_list'], (int) $line, $mac_id);
+			if ($this->eda->sql($sql, 'getOne'))
+			{
+				$this->error['add_line'] = _("This line has already been assigned!");
+				return false;
+			}
+		}
+
+		if (!isset($displayname) || $displayname === '')
+		{
+			$sql  = sprintf("SELECT description FROM %s WHERE id = %s", self::TABLES['devices'], $this->q($ext));
+			$name = (string) $this->eda->sql($sql, 'getOne');
+		}
+		else
+		{
+			$name = $displayname;
+		}
+
+		$sql = sprintf(
+			"INSERT INTO %s (mac_id, ext, line, description) VALUES (%d, %s, %d, %s)",
+			self::TABLES['epm_line_list'], $mac_id, $this->q($ext), (int) $line, $this->q(mb_substr($name, 0, 20))
+		);
+		$this->eda->sql($sql);
+		$this->message['add_line'] = sprintf(_("Added '%s' (%s) to line %s. Configuration files are not generated until you click Save."), $name, $ext, $line);
+		return $mac_id;
+	}
+
+	public function update_device($macid, $model, $template, $luid = NULL, $name = NULL, $line = NULL, $update_lines = TRUE)
+	{
+		$sql = sprintf("UPDATE %s SET model = %d, template_id = %d WHERE id = %d", self::TABLES['epm_mac_list'], (int) $model, (int) $template, (int) $macid);
+		$this->eda->sql($sql);
+		if ($update_lines)
+		{
+			if (!empty($luid))
+			{
+				$this->update_line($luid, NULL, $name, $line);
+			}
+			else
+			{
+				$this->update_line(NULL, $macid);
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Refresh a line (or every line of a phone): line number, and the description
+	 * copied from the FreePBX device so the phone label follows extension renames.
+	 */
+	public function update_line($luid = NULL, $macid = NULL, $name = NULL, $line = NULL)
+	{
+		if (!empty($luid))
+		{
+			$sql = sprintf("SELECT * FROM %s WHERE luid = %d", self::TABLES['epm_line_list'], (int) $luid);
+			$row = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+			if (empty($row))
+			{
+				return false;
+			}
+			if (!isset($name) || $name === '')
+			{
+				$sql  = sprintf("SELECT description FROM %s WHERE id = %s", self::TABLES['devices'], $this->q($row['ext']));
+				$name = (string) $this->eda->sql($sql, 'getOne');
+			}
+			if (!isset($line) || $line === '')
+			{
+				$line = $row['line'];
+			}
+			$sql = sprintf("UPDATE %s SET line = %d, description = %s WHERE luid = %d", self::TABLES['epm_line_list'], (int) $line, $this->q(mb_substr($name, 0, 20)), (int) $luid);
+			$this->eda->sql($sql);
+			return true;
+		}
+
+		$sql   = sprintf("SELECT * FROM %s WHERE mac_id = %d", self::TABLES['epm_line_list'], (int) $macid);
+		$lines = $this->eda->sql($sql, 'getAll', \PDO::FETCH_ASSOC);
+		foreach ((array) $lines as $row)
+		{
+			$sql  = sprintf("SELECT description FROM %s WHERE id = %s", self::TABLES['devices'], $this->q($row['ext']));
+			$name = (string) $this->eda->sql($sql, 'getOne');
+			$sql  = sprintf("UPDATE %s SET description = %s WHERE luid = %d", self::TABLES['epm_line_list'], $this->q(mb_substr($name, 0, 20)), (int) $row['luid']);
+			$this->eda->sql($sql);
+		}
+		return true;
+	}
+
+	/**
+	 * Delete a line; the last line of a phone is only removed (together with the
+	 * phone) when $allow_device_remove is true.
+	 */
+	public function delete_line($lineid, $allow_device_remove = FALSE)
+	{
+		$sql    = sprintf("SELECT mac_id FROM %s WHERE luid = %d", self::TABLES['epm_line_list'], (int) $lineid);
+		$mac_id = $this->eda->sql($sql, 'getOne');
+		if (empty($mac_id))
+		{
+			$this->error['delete_line'] = _("Line not found");
+			return false;
+		}
+		$sql       = sprintf("SELECT COUNT(*) FROM %s WHERE mac_id = %d", self::TABLES['epm_line_list'], (int) $mac_id);
+		$num_lines = (int) $this->eda->sql($sql, 'getOne');
+
+		if ($num_lines > 1)
+		{
+			$this->eda->sql(sprintf("DELETE FROM %s WHERE luid = %d", self::TABLES['epm_line_list'], (int) $lineid));
+			$this->message['delete_line'] = _("Deleted") . "!";
+			return true;
+		}
+		if ($allow_device_remove)
+		{
+			return $this->delete_device($mac_id);
+		}
+		$this->error['delete_line'] = _("You can't remove the only line left") . "!";
+		return false;
+	}
+
+	public function delete_device($mac_id)
+	{
+		$this->eda->sql(sprintf("DELETE FROM %s WHERE mac_id = %d", self::TABLES['epm_line_list'], (int) $mac_id));
+		$this->eda->sql(sprintf("DELETE FROM %s WHERE id = %d", self::TABLES['epm_mac_list'], (int) $mac_id));
+		$this->message['delete_device'] = _("Deleted") . "!";
+		return true;
+	}
+
+	public function delete_device_by_mac($mac)
+	{
+		$mac_id = $this->retrieve_device_by_mac($mac);
+		return $mac_id ? $this->delete_device($mac_id) : false;
+	}
+
+	/**
+	 * Everything known about a phone: brand, product, model, template, MAC and its
+	 * lines (with the FreePBX device row and the SIP secret of each extension).
+	 * @return array|false
+	 */
+	public function get_phone_info($mac_id = NULL)
+	{
+		if (empty($mac_id))
+		{
+			$this->error['get_phone_info'] = _("Mac ID is not set");
+			return false;
+		}
+		$mac_id = (int) $mac_id;
+
+		$sql = sprintf("SELECT id, mac, model FROM %s WHERE id = %d", self::TABLES['epm_mac_list'], $mac_id);
+		$row = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+		if (empty($row))
+		{
+			$this->error['get_phone_info'] = sprintf(_("Device %s not found"), $mac_id);
+			return false;
+		}
+
+		$lines_sql = sprintf(
+			"SELECT l.*, s.data AS secret, d.*, l.description AS epm_description
+			 FROM %s AS l
+			 JOIN %s AS d ON l.ext = d.id
+			 LEFT JOIN sip AS s ON s.id = l.ext AND s.keyword = 'secret'
+			 WHERE l.mac_id = %d ORDER BY l.line ASC",
+			self::TABLES['epm_line_list'], self::TABLES['devices'], $mac_id
+		);
+
+		if ((int) $row['model'] > 0)
+		{
+			$sql = sprintf(
+				"SELECT mac.id, mac.specific_settings, mac.config_files_override, mac.global_user_cfg_data, mac.global_settings_override,
+						mac.mac, mac.template_id, mac.global_custom_cfg_data,
+						m.id AS model_id, m.model, m.template_data, m.enabled, m.max_lines,
+						b.id AS brand_id, b.name, b.directory,
+						p.long_name, p.id AS product_id, p.cfg_dir, p.cfg_ver
+				 FROM %s AS mac, %s AS m, %s AS b, %s AS p
+				 WHERE mac.model = m.id AND b.id = m.brand AND p.id = m.product_id AND mac.id = %d",
+				self::TABLES['epm_mac_list'], self::TABLES['epm_model_list'], self::TABLES['epm_brands_list'], self::TABLES['epm_product_list'], $mac_id
+			);
+			$phone_info = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+			if (empty($phone_info))
+			{
+				$this->error['get_phone_info'] = sprintf(_("Device %s points at a model that no longer exists; edit it and pick a model"), $mac_id);
+				return false;
+			}
+			if ((int) $phone_info['template_id'] > 0)
+			{
+				$sql = sprintf("SELECT name, global_custom_cfg_data, config_files_override, global_settings_override FROM %s WHERE id = %d", self::TABLES['epm_template_list'], (int) $phone_info['template_id']);
+				$phone_info['template_data_info'] = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+			}
+		}
+		else
+		{
+			// Unknown model: enough information for the list and the edit form
 			$brand = $this->get_brand_from_mac($row['mac']);
-    		if ($brand) {
-    			$phone_info['brand_id'] = $brand['id'];
-    			$phone_info['name'] = $brand['name'];
-    		} else {
-    			$phone_info['brand_id'] = 0;
-    			$phone_info['name'] = 'Unknown';
-    		}
-
-    		$phone_info['id'] = $mac_id;
-    		$phone_info['model_id'] = 0;
-    		$phone_info['product_id'] = 0;
-    		$phone_info['custom_cfg_template'] = 0;
-    		$phone_info['mac'] = $row['mac'];
-    		$sql = "SELECT endpointman_line_list.*, sip.data as secret, devices.* FROM endpointman_line_list, sip, devices WHERE endpointman_line_list.ext = devices.id AND endpointman_line_list.ext = sip.id AND sip.keyword = 'secret' AND mac_id = " . $mac_id;
-    		$lines_info = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-    		foreach ($lines_info as $line) {
-    			$phone_info['line'][$line['line']] = $line;
-    		}
-    	}
-		$phone_info = "test";
-    	return $phone_info;
-    }
-*/
-    /**
-     * Get the brand from any mac sent to this function
-     * @param string $mac
-     * @return array
-
-    function get_brand_from_mac($mac) {
-    	//Check for valid mac address first
-		if (!$this->mac_check_clean($mac)) {
-    		return(FALSE);
-    	}
-
-    	//Get the OUI only
-    	$oui = substr($this->mac_check_clean($mac), 0, 6);
-    	//Find the matching brand model to the oui
-    	$oui_sql = "SELECT endpointman_brand_list.name, endpointman_brand_list.id FROM endpointman_oui_list, endpointman_brand_list WHERE oui LIKE '%" . $oui . "%' AND endpointman_brand_list.id = endpointman_oui_list.brand AND endpointman_brand_list.installed = 1 LIMIT 1";
-    	$brand = sql($oui_sql, 'getRow', \PDO::FETCH_ASSOC);
-
-    	$res = sql($oui_sql);
-    	$brand_count = count(array($res));
-
-    	if (!$brand_count) {
-    		//oui doesn't have a matching mysql reference, probably a PC/router/wap/printer of some sort.
-    		$phone_info['id'] = 0;
-    		$phone_info['name'] = _("Unknown");
-    	} else {
-    		$phone_info['id'] = $brand['id'];
-    		$phone_info['name'] = $brand['name'];
-    	}
-
-    	return($phone_info);
-    }
-
-*/
-
-    /**
-     * Prepare and then send the data that Provisioner expects, then take what provisioner gives us and do what it says
-     * @param array $phone_info Everything from get_phone_info
-     * @param bool  $reboot Reboot the Phone after write
-     * @param bool  $write  Write out Directory structure.
-
-    function prepare_configs($phone_info, $reboot=TRUE, $write=TRUE)
-    {
-    	$this->PROVISIONER_BASE = $this->PHONE_MODULES_PATH;
-        define('PROVISIONER_BASE', $this->PROVISIONER_BASE);
-    	if (file_exists($this->PHONE_MODULES_PATH . '/autoload.php')) {
-    		if (!class_exists('ProvisionerConfig')) {
-    			require($this->PHONE_MODULES_PATH . '/autoload.php');
-    		}
-
-    		//Load Provisioner
-    		$class = "endpoint_" . $phone_info['directory'] . "_" . $phone_info['cfg_dir'] . '_phone';
-    		$base_class = "endpoint_" . $phone_info['directory'] . '_base';
-    		$master_class = "endpoint_base";
-    		if (!class_exists($master_class)) {
-    			ProvisionerConfig::endpointsAutoload($master_class);
-    		}
-    		if (!class_exists($base_class)) {
-    			ProvisionerConfig::endpointsAutoload($base_class);
-    		}
-    		if (!class_exists($class)) {
-    			ProvisionerConfig::endpointsAutoload($class);
-    		}
-
-    		if (class_exists($class)) {
-				$provisioner_lib = new $class();
-
-    			//Determine if global settings have been overridden
-    			if ($phone_info['template_id'] > 0) {
-    				if (isset($phone_info['template_data_info']['global_settings_override'])) {
-    					$settings = unserialize($phone_info['template_data_info']['global_settings_override']);
-    				} else {
-    					$settings['srvip'] = $this->getConfig('srvip');
-    					$settings['srvport'] = $this->getConfig('srvport', '5060');
-    					$settings['ntp'] = $this->getConfig('ntp');
-    					$settings['config_location'] = $this->getConfig('config_location');
-    					$settings['tz'] = $this->getConfig('tz');
-    				}
-    			} else {
-    				if (isset($phone_info['global_settings_override'])) {
-    					$settings = unserialize($phone_info['global_settings_override']);
-    				} else {
-    					$settings['srvip'] = $this->getConfig('srvip');
-    					$settings['srvport'] = $this->getConfig('srvport', '5060');
-    					$settings['ntp'] = $this->getConfig('ntp');
-    					$settings['config_location'] = $this->getConfig('config_location');
-    					$settings['tz'] = $this->getConfig('tz');
-    				}
-    			}
-
-
-
-    			//Tell the system who we are and were to find the data.
-    			$provisioner_lib->root_dir = $this->PHONE_MODULES_PATH;
-    			$provisioner_lib->engine = 'asterisk';
-    			$provisioner_lib->engine_location = $this->getConfig('asterisk_location','asterisk');
-    			$provisioner_lib->system = 'unix';
-
-    			//have to because of versions less than php5.3
-    			$provisioner_lib->brand_name = $phone_info['directory'];
-    			$provisioner_lib->family_line = $phone_info['cfg_dir'];
-
-
-
-    			//Phone Model (Please reference family_data.xml in the family directory for a list of recognized models)
-    			//This has to match word for word. I really need to fix this....
-    			$provisioner_lib->model = $phone_info['model'];
-
-    			//Timezone
-    			try {
-                                $provisioner_lib->DateTimeZone = new \DateTimeZone($settings['tz']);
-    			} catch (Exception $e) {
-$this->error['parse_configs'] = 'Error Returned From Timezone Library: ' . $e->getMessage();
-    				return(FALSE);
-    			}
-
-    			$temp = "";
-    			$template_data = unserialize($phone_info['template_data']);
-    			$global_user_cfg_data = unserialize($phone_info['global_user_cfg_data']);
-    			if ($phone_info['template_id'] > 0) {
-    				$global_custom_cfg_data = unserialize($phone_info['template_data_info']['global_custom_cfg_data']);
-    				//Provide alternate Configuration file instead of the one from the hard drive
-    				if (!empty($phone_info['template_data_info']['config_files_override'])) {
-    					$temp = unserialize($phone_info['template_data_info']['config_files_override']);
-    					foreach ($temp as $list) {
-    						$sql = "SELECT original_name,data FROM endpointman_custom_configs WHERE id = " . $list;
-    						//$res = sql($sql);
-							$res = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-    						if (count(array($res))) {
-    							$data = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-    							$provisioner_lib->config_files_override[$data['original_name']] = $data['data'];
-    						}
-    					}
-    				}
-    			} else {
-    				$global_custom_cfg_data = unserialize($phone_info['global_custom_cfg_data']);
-    				//Provide alternate Configuration file instead of the one from the hard drive
-    				if (!empty($phone_info['config_files_override'])) {
-    					$temp = unserialize($phone_info['config_files_override']);
-    					foreach ($temp as $list) {
-    						$sql = "SELECT original_name,data FROM endpointman_custom_configs WHERE id = " . $list;
-    						//$res = sql($sql);
-							$res = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-    						if (count(array($res))) {
-    							$data = sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-    							$provisioner_lib->config_files_override[$data['original_name']] = $data['data'];
-    						}
-    					}
-    				}
-    			}
-
-    			if (!empty($global_custom_cfg_data)) {
-    				if (array_key_exists('data', $global_custom_cfg_data)) {
-    					$global_custom_cfg_ari = $global_custom_cfg_data['ari'];
-    					$global_custom_cfg_data = $global_custom_cfg_data['data'];
-    				} else {
-    					$global_custom_cfg_data = array();
-    					$global_custom_cfg_ari = array();
-    				}
-    			}
-
-    			$new_template_data = array();
-    			$line_ops = array();
-    			if (is_array($global_custom_cfg_data)) {
-    				foreach ($global_custom_cfg_data as $key => $data) {
-    					//TODO: clean up with reg-exp
-    					$full_key = $key;
-    					$key = explode('|', $key);
-    					$count = count($key);
-    					switch ($count) {
-    						case 1:
-    							if (($this->getConfig('enable_ari') == 1) AND (isset($global_custom_cfg_ari[$full_key])) AND (isset($global_user_cfg_data[$full_key]))) {
-    								$new_template_data[$full_key] = $global_user_cfg_data[$full_key];
-    							} else {
-    								$new_template_data[$full_key] = $global_custom_cfg_data[$full_key];
-    							}
-    							break;
-    						case 2:
-    							$breaks = explode('_', $key[1]);
-    							if (($this->getConfig('enable_ari') == 1) AND (isset($global_custom_cfg_ari[$full_key])) AND (isset($global_user_cfg_data[$full_key]))) {
-    								$new_template_data['loops'][$breaks[0]][$breaks[2]][$breaks[1]] = $global_user_cfg_data[$full_key];
-    							} else {
-    								$new_template_data['loops'][$breaks[0]][$breaks[2]][$breaks[1]] = $global_custom_cfg_data[$full_key];
-    							}
-    							break;
-    						case 3:
-    							if (($this->getConfig('enable_ari') == 1) AND (isset($global_custom_cfg_ari[$full_key])) AND (isset($global_user_cfg_data[$full_key]))) {
-    								$line_ops[$key[1]][$key[2]] = $global_user_cfg_data[$full_key];
-    							} else {
-    								$line_ops[$key[1]][$key[2]] = $global_custom_cfg_data[$full_key];
-    							}
-    							break;
-    					}
-    				}
-    			}
-
-    			if (!$write) {
-    				$new_template_data['provision']['type'] = 'dynamic';
-    				$new_template_data['provision']['protocol'] = 'http';
-    				$new_template_data['provision']['path'] =  rtrim($settings['srvip'] . dirname($_SERVER['REQUEST_URI']) . '/', '/');
-    				$new_template_data['provision']['encryption'] = FALSE;
-    			} else {
-    				$new_template_data['provision']['type'] = 'file';
-    				$new_template_data['provision']['protocol'] = 'tftp';
-    				$new_template_data['provision']['path'] = $settings['srvip'];
-    				$new_template_data['provision']['encryption'] = FALSE;
-    			}
-
-    			$new_template_data['ntp'] = $settings['ntp'];
-
-    			//Overwrite all specific settings variables now
-    			if (!empty($phone_info['specific_settings'])) {
-    				$specific_settings = unserialize($phone_info['specific_settings']);
-    				$specific_settings = is_array($specific_settings) ? $specific_settings : array();
-    			} else {
-    				$specific_settings = array();
-    			}
-
-    			//Set Variables according to the template_data files included. We can include different template.xml files within family_data.xml also one can create
-    			//template_data_custom.xml which will get included or template_data_<model_name>_custom.xml which will also get included
-    			//line 'global' will set variables that aren't line dependant
-
-
-    			$provisioner_lib->settings = $new_template_data;
-
-    			//SIP port for {$server_port.line.N}: template/phone override, else global setting, else 5060
-    			$server_port = (!empty($settings['srvport']) && ctype_digit((string) $settings['srvport'])) ? (string) $settings['srvport'] : (string) $this->getConfig('srvport', '5060');
-    			if (!ctype_digit($server_port) || (int) $server_port < 1 || (int) $server_port > 65535) {
-    				$server_port = '5060';
-    			}
-    			//Loop through Lines!
-    			$li = 0;
-    			foreach ($phone_info['line'] as $line) {
-    				$line_options = is_array($line_ops[$line['line']]) ? $line_ops[$line['line']] : array();
-    				$line_statics = array('line' => $line['line'], 'username' => $line['ext'], 'authname' => $line['ext'], 'secret' => $line['secret'], 'displayname' => $line['description'], 'server_host' => $this->getConfig('srvip'), 'server_port' => $server_port, 'user_extension' => $line['user_extension']);
-    				$provisioner_lib->settings['line'][$li] = array_merge($line_options, $line_statics);
-    				$li++;
-    			}
-
-    			if (array_key_exists('data', $specific_settings)) {
-    				foreach ($specific_settings['data'] as $key => $data) {
-    					$default_exp = preg_split("/\|/i", $key);
-    					if (isset($default_exp[2])) {
-    						//lineloop
-    						$var = $default_exp[2];
-    						$line = $default_exp[1];
-    						$loc = $this->system->arraysearchrecursive($line, $provisioner_lib->settings['line'], 'line');
-    						if ($loc !== FALSE) {
-    							$k = $loc[0];
-    							$provisioner_lib->settings['line'][$k][$var] = $data;
-    						} else {
-    							//Adding a new line-ish type options
-    							if (isset($specific_settings['data']['line|' . $line . '|line_enabled'])) {
-    								$lastkey = array_pop(array_keys($provisioner_lib->settings['line']));
-    								$lastkey++;
-    								$provisioner_lib->settings['line'][$lastkey]['line'] = $line;
-    								$provisioner_lib->settings['line'][$lastkey][$var] = $data;
-    							}
-    						}
-    					} else {
-    						switch ($key) {
-    							case "connection_type":
-    								$provisioner_lib->settings['network'][$key] = $data;
-    								break;
-    							case "ip4_address":
-    								$provisioner_lib->settings['network']['ipv4'] = $data;
-    								break;
-    							case "ip6_address":
-    								$provisioner_lib->settings['network']['ipv6'] = $data;
-    								break;
-    							case "subnet_mask":
-    								$provisioner_lib->settings['network']['subnet'] = $data;
-    								break;
-    							case "gateway_address":
-    								$provisioner_lib->settings['network']['gateway'] = $data;
-    								break;
-    							case "primary_dns":
-    								$provisioner_lib->settings['network'][$key] = $data;
-    								break;
-    							default:
-    								$provisioner_lib->settings[$key] = $data;
-    								break;
-    						}
-    					}
-    				}
-    			}
-
-    			$provisioner_lib->settings['mac'] = $phone_info['mac'];
-    			$provisioner_lib->mac = $phone_info['mac'];
-
-    			//Setting a line variable here...these aren't defined in the template_data.xml file yet. however they will still be parsed
-    			//and if they have defaults assigned in a future template_data.xml or in the config file using pipes (|) those will be used, pipes take precedence
-    			$provisioner_lib->processor_info = "EndPoint Manager Version " . $this->getConfig('version');
-
-    			// Because every brand is an extension (eventually) of endpoint, you know this function will exist regardless of who it is
-    			//Start timer
-    			$time_start = microtime(true);
-
-    			$provisioner_lib->debug = TRUE;
-
-    			try {
-    				$returned_data = $provisioner_lib->generate_all_files();
-    			} catch (Exception $e) {
-$this->error['prepare_configs'] = 'Error Returned From Provisioner Library: ' . $e->getMessage();
-    				return(FALSE);
-    			}
-    			//print_r($provisioner_lib->debug_return);
-    			//End timer
-    			$time_end = microtime(true);
-    			$time = $time_end - $time_start;
-    			if ($time > 360) {
-$this->error['generate_time'] = "It took an awfully long time to generate configs...(" . round($time, 2) . " seconds)";
-    			}
-    			if ($write) {
-    				$this->write_configs($provisioner_lib, $reboot, $settings['config_location'], $phone_info, $returned_data);
-    			} else {
-    				return ($returned_data);
-    			}
-    			return(TRUE);
-    		} else {
-$this->error['parse_configs'] = "Can't Load \"" . $class . "\" Class!";
-    			return(FALSE);
-    		}
-    	} else {
-$this->error['parse_configs'] = "Can't Load the Autoloader!";
-    		return(FALSE);
-    	}
-    }
-
-    function write_configs($provisioner_lib, $reboot, $write_path, $phone_info, $returned_data) {
-
-    	//Create Directory Structure (If needed)
-    	if (isset($provisioner_lib->directory_structure)) {
-    		foreach ($provisioner_lib->directory_structure as $data) {
-    			if (file_exists($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data)) {
-    				$dir_iterator = new \RecursiveDirectoryIterator($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data . "/");
-    				$iterator = new \RecursiveIteratorIterator($dir_iterator, \RecursiveIteratorIterator::SELF_FIRST);
-    				// could use CHILD_FIRST if you so wish
-    				foreach ($iterator as $file) {
-    					$dir = $write_path . str_replace($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/", "", dirname($file));
-    					if (!file_exists($dir)) {
-    						if (!@mkdir($dir, 0775, TRUE)) {
-$this->error['parse_configs'] = "Could Not Create Directory: " . $data;
-    							return(FALSE);
-    						}
-    					}
-    				}
-    			} else {
-    				$dir = $write_path . $data;
-    				if (!file_exists($dir)) {
-    					if (!@mkdir($dir, 0775)) {
-$this->error['parse_configs'] = "Could Not Create Directory: " . $data;
-    						return(FALSE);
-    					}
-    				}
-    			}
-    		}
-    	}
-
-    	//Copy Files (If needed)
-    	if (isset($provisioner_lib->copy_files)) {
-    		foreach ($provisioner_lib->copy_files as $data) {
-    			if (file_exists($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data)) {
-    				$file = $write_path . $data;
-    				$orig = $this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data;
-    				if (!file_exists($file)) {
-    					if (!@copy($orig, $file)) {
-$this->error['parse_configs'] = "Could Not Create File: " . $data;
-    						return(FALSE);
-    					}
-    				} else {
-    					if (file_exists($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data)) {
-    						if (!file_exists(dirname($write_path . $data))) {
-    							!@mkdir(dirname($write_path . $data), 0775);
-    						}
-    						copy($this->PHONE_MODULES_PATH . "/endpoint/" . $phone_info['directory'] . "/" . $phone_info['cfg_dir'] . "/" . $data, $write_path . $data);
-    						chmod($write_path . $data, 0775);
-    					}
-    				}
-    			}
-    		}
-    	}
-
-    	foreach ($returned_data as $file => $data) {
-    		if (((file_exists($write_path . $file)) AND (is_writable($write_path . $file)) AND (!in_array($file, $provisioner_lib->protected_files))) OR (!file_exists($write_path . $file))) {
-    			//Move old file to backup
-    			if (!$this->eda->global_cfg['backup_check']) {
-    				if (!file_exists($write_path . 'config_bkup')) {
-    					if (!@mkdir($write_path . 'config_bkup', 0775)) {
-$this->error['parse_configs'] = "Could Not Create Backup Directory";
-    						return(FALSE);
-    					}
-    				}
-    				if (file_exists($write_path . $file)) {
-    					copy($write_path . $file, $write_path . 'config_bkup/' . $file . '.' . time());
-    				}
-    			}
-    			file_put_contents($write_path . $file, $data);
-    			chmod($write_path . $file, 0775);
-    			if (!file_exists($write_path . $file)) {
-$this->error['parse_configs'] = "File (" . $file . ") not written to hard drive!";
-    				return(FALSE);
-    			}
-    		} elseif (!in_array($file, $provisioner_lib->protected_files)) {
-$this->error['parse_configs'] = "File not written to hard drive!";
-    			return(FALSE);
-    		}
-    	}
-
-    	if ($reboot) {
-    		$provisioner_lib->reboot();
-    	}
-    }
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*********************************************
-	****** CODIGO ANTIGUO -- SIN REVISADO ********
-	*********************************************/
-
-
-
-
-
-
-
-
-
-/*
-
-    function download_json($location, $directory=NULL) {
-        $temp_directory = $this->sys_get_temp_dir() . "/epm_temp/";
-        if (!isset($directory)) {
-            $destination_file = $this->PHONE_MODULES_PATH . '/endpoint/master.json';
-            $directory = "master";
-        } else {
-            if (!file_exists($this->PHONE_MODULES_PATH . '/' . $directory)) {
-                mkdir($this->PHONE_MODULES_PATH . '/' . $directory, 0775, TRUE);
-            }
-            $destination_file = $this->PHONE_MODULES_PATH . '/' . $directory . '/brand_data.json';
-        }
-        $temp_file = $temp_directory . $directory . '.json';
-        file_exists(dirname($temp_file)) ? '' : mkdir(dirname($temp_file));
-
-        if ($this->system->download_file($location, $temp_file)) {
-            $handle = fopen($temp_file, "rb");
-            $contents = fread($handle, filesize($temp_file));
-            fclose($handle);
-
-            $a = $this->validate_json($contents);
-            if ($a === FALSE) {
-                //Error with the internet....ABORRRTTTT THEEEEE DOWNLOAAAAADDDDDDDD! SCOTTYYYY!;
-                unlink($temp_file);
-                return(FALSE);
-            } else {
-                rename($temp_file, $destination_file);
-                chmod($destination_file, 0775);
-                return(TRUE);
-            }
-        } else {
-            return(FALSE);
-        }
-    }
-
-
-*/
-
-
-    /**
-    * Send process to run in background
-    * @version 2.11
-    * @param string $command the command to run
-    * @param integer $Priority the Priority of the command to run
-    * @return int $PID process id
-    * @package epm_system
-
-    function run_in_background($Command, $Priority = 0) {
-        return($Priority ? shell_exec("nohup nice -n $Priority $Command 2> /dev/null & echo $!") : shell_exec("nohup $Command > /dev/null 2> /dev/null & echo $!"));
-    }
-
-    /**
-    * Check if process is running in background
-    * @version 2.11
-    * @param string $PID proccess ID
-    * @return bool true or false
-    * @package epm_system
-
-    function is_process_running($PID) {
-        exec("ps $PID", $ProcessState);
-        return(count($ProcessState) >= 2);
-    }
-
-
-
-    /**
-    * Uses which to find executables that asterisk can run/use
-    * @version 2.11
-    * @param string $exec Executable to find
-    * @package epm_system
-
-
-    function find_exec($exec) {
-        $o = exec('which '.$exec);
-        if($o) {
-            if(file_exists($o) && is_executable($o)) {
-                return($o);
-            } else {
-                return('');
-            }
-        } else {
-            return('');
-        }
-    }
-
-    */
-    /**
-     * Only used once in all of Endpoint Manager to determine if a table exists
-     * @param string $table Table to look for
-     * @return bool
-
-    function table_exists($table) {
-        $sql = "SHOW TABLES FROM " . $this->config->get('AMPDBNAME');
-        $result = $this->eda->sql($sql, 'getAll');
-        foreach ($result as $row) {
-            if ($row[0] == $table) {
-                return TRUE;
-            }
-        }
-        return FALSE;
-    }
-     */
-
-
-
-
-    /**
-     * Check for valid netmast to avoid security issues
-     * @param string $mask the complete netmask, eg [1.1.1.1/24]
-     * @return boolean True if valid, False if not
-     * @version 2.11
-
-    function validate_netmask($mask) {
-        return preg_match("/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/", $mask) ? TRUE : FALSE;
-    }
-
-    /**
-     * Discover New Device/Hardware
-     * nmap will actually discover 'unseen' devices that the VoIP server hasn't heard from
-     * If the user just wishes to use the local arp cache they can tell the function to not use nmap
-     * This results in a speed increase from 60 seconds to less than one second.
-     *
-     * This is the original function that started it all
-     * http://www.pbxinaflash.com/community/index.php?threads/end-point-configuration-manager-module-for-freepbx-part-1.4514/page-4#post-37671
-     *
-     * @version 2.11
-     * @param mixed $netmask The netmask, eg [1.1.1.1/24]
-     * @param boolean $use_nmap True use nmap, false don't use it
-     * @return array List of devices found on the network
-
-    function discover_new($netmask, $use_nmap=TRUE) {
-        if (($use_nmap) AND (file_exists($this->eda->global_cfg['nmap_location'])) AND ($this->validate_netmask($netmask))) {
-            shell_exec($this->eda->global_cfg['nmap_location'] . ' -v -sP ' . $netmask);
-        } elseif (!$this->validate_netmask($netmask)) {
-            $this->error['discover_new'] = "Invalid Netmask";
-            return(FALSE);
-        } elseif (!file_exists($this->eda->global_cfg['nmap_location'])) {
-            $this->error['discover_new'] = "Could Not Find NMAP, Using ARP Only";
-            //return(FALSE);
-        }
-
-        //Get arp list
-        $arp_list = shell_exec($this->eda->global_cfg['arp_location'] . " -an");
-
-        //Throw arp list into an array, break by new lines
-        $arp_array = explode("\n", $arp_list);
-
-        //Find all references to active computers by searching out mac addresses.
-        $temp = array_values(array_unique(preg_grep("/[0-9a-f][0-9a-f][:-]" .
-                                "[0-9a-f][0-9a-f][:-]" .
-                                "[0-9a-f][0-9a-f][:-]" .
-                                "[0-9a-f][0-9a-f][:-]" .
-                                "[0-9a-f][0-9a-f][:-]" .
-                                "[0-9a-f][0-9a-f]/i", $arp_array)));
-
-        //Go through each row of valid arp entries and pull out the information and add it into a nice array!
-        $z = 0;
-        foreach ($temp as $key => &$value) {
-
-            //Pull out the IP address from row. It's always the first entry in the row and it can only be a max of 15 characters with the delimiters
-            preg_match_all("/\((.*?)\)/", $value, $matches);
-            $ip = $matches[1];
-            $ip = $ip[0];
-
-            //Pull out the mac address by looking for the delimiter
-            $mac = substr($value, (strpos($value, ":") - 2), 17);
-
-            //Get rid of the delimiter
-            $mac_strip = strtoupper(str_replace(":", "", $mac));
-
-            //arp -n will return a MAC address of 000000000000 if no hardware was found, so we need to ignore it
-            if ($mac_strip != "000000000000") {
-                //only use the first 6 characters for the oui: http://en.wikipedia.org/wiki/Organizationally_Unique_Identifier
-                $oui = substr($mac_strip, 0, 6);
-
-                //Find the matching brand model to the oui
-                $oui_sql = "SELECT endpointman_brand_list.name, endpointman_brand_list.id FROM endpointman_oui_list, endpointman_brand_list WHERE oui LIKE '%" . $oui . "%' AND endpointman_brand_list.id = endpointman_oui_list.brand AND endpointman_brand_list.installed = 1 LIMIT 1";
-
-                $brand = $this->eda->sql($oui_sql, 'getRow', \PDO::FETCH_ASSOC);
-
-                $res = $this->eda->sql($oui_sql);
-                $brand_count = count(array($res));
-
-                if (!$brand_count) {
-                    //oui doesn't have a matching mysql reference, probably a PC/router/wap/printer of some sort.
-                    $brand['name'] = FALSE;
-                    $brand['id'] = NULL;
-                }
-
-                //Find out if endpoint has already been configured for this mac address
-                $epm_sql = "SELECT * FROM endpointman_mac_list WHERE mac LIKE  '%" . $mac_strip . "%'";
-                $epm_row = $this->eda->sql($epm_sql, 'getRow', \PDO::FETCH_ASSOC);
-
-                $res = $this->eda->sql($epm_sql);
-
-                $epm = count(array($res)) ? TRUE : FALSE;
-
-                //Add into a final array
-                $final[$z] = array("ip" => $ip, "mac" => $mac, "mac_strip" => $mac_strip, "oui" => $oui, "brand" => $brand['name'], "brand_id" => $brand['id'], "endpoint_managed" => $epm);
-                $z++;
-            }
-        }
-        return !is_array($final) ? FALSE : $final;
-    }
-
-
-
-   
-
-
-
-
-    function display_templates($product_id, $temp_select = NULL) {
-        $i = 0;
-        $sql = "SELECT id FROM  endpointman_product_list WHERE endpointman_product_list.id ='" . $product_id . "'";
-        $id = sql($sql, 'getOne');
-
-        $sql = "SELECT * FROM  endpointman_template_list WHERE  product_id = '" . $id . "'";
-        $data = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-
-        foreach ($data as $row) {
-            $temp[$i]['value'] = $row['id'];
-            $temp[$i]['text'] = $row['name'];
-            if ($row['id'] == $temp_select) {
-                $temp[$i]['selected'] = "selected";
-            }
-            $i++;
-        }
-        $temp[$i]['value'] = 0;
-        if ($temp_select == 0) {
-            $temp[$i]['text'] = "Custom...";
-            $temp[$i]['selected'] = "selected";
-        } else {
-            $temp[$i]['text'] = "Custom...";
-        }
-
-        return($temp);
-    }
-
-    function validate_json($json) {
-        return(TRUE);
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-
-    function update_device($macid, $model, $template, $luid=NULL, $name=NULL, $line=NULL, $update_lines=TRUE) {
-        $sql = "UPDATE endpointman_mac_list SET model = " . $model . ", template_id =  " . $template . " WHERE id = " . $macid;
-        sql($sql);
-
-        if ($update_lines) {
-            if (isset($luid)) {
-                $this->update_line($luid, NULL, $name, $line);
-                return(TRUE);
-            } else {
-                $this->update_line(NULL, $macid);
-                return(TRUE);
-            }
-        }
-    }
-
-    function update_line($luid=NULL, $macid=NULL, $name=NULL, $line=NULL) {
-        if (isset($luid)) {
-            $sql = "SELECT * FROM endpointman_line_list WHERE luid = " . $luid;
-            $row = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
-
-            if (!isset($name)) {
-                $sql = "SELECT description FROM devices WHERE id = " . $row['ext'];
-                $name = sql($sql, 'getOne');
-            }
-
-            if (!isset($line)) {
-                $line = $row['line'];
-            }
-            $sql = "UPDATE endpointman_line_list SET line = '" . $line . "', ext = '" . $row['ext'] . "', description = '" . $this->eda->escapeSimple($name) . "' WHERE luid =  " . $row['luid'];
-            sql($sql);
-            return(TRUE);
-        } else {
-            $sql = "SELECT * FROM endpointman_line_list WHERE mac_id = " . $macid;
-            $lines_info = sql($sql, 'getAll', \PDO::FETCH_ASSOC);
-            foreach ($lines_info as $row) {
-                $sql = "SELECT description FROM devices WHERE id = " . $row['ext'];
-                $name = sql($sql, 'getOne');
-
-                $sql = "UPDATE endpointman_line_list SET line = '" . $row['line'] . "', ext = '" . $row['ext'] . "', description = '" . $this->eda->escapeSimple($name) . "' WHERE luid =  " . $row['luid'];
-                sql($sql);
-            }
-            return(TRUE);
-        }
-    }
-
-
-     * This will either a. delete said line or b. delete said device from line
-     * @param <type> $line
-     * @return <type>
-
-    function delete_line($lineid, $allow_device_remove=FALSE) {
-        $sql = 'SELECT mac_id FROM endpointman_line_list WHERE luid = ' . $lineid;
-        $mac_id = sql($sql, 'getOne');
-        $row = $this->get_phone_info($mac_id);
-
-        $sql = 'SELECT COUNT(*) FROM endpointman_line_list WHERE mac_id = ' . $mac_id;
-        $num_lines = sql($sql, 'getOne');
-        if ($num_lines > 1) {
-            $sql = "DELETE FROM endpointman_line_list WHERE luid=" . $lineid;
-            sql($sql);
-            $this->message['delete_line'] = "Deleted!";
-            return(TRUE);
-        } else {
-            if ($allow_device_remove) {
-                $sql = "DELETE FROM endpointman_line_list WHERE luid=" . $lineid;
-                sql($sql);
-
-                $sql = "DELETE FROM endpointman_mac_list WHERE id=" . $mac_id;
-                sql($sql);
-                $this->message['delete_line'] = "Deleted!";
-                return(TRUE);
-            } else {
-                $this->error['delete_line'] = _("You can't remove the only line left") . "!";
-                return(FALSE);
-            }
-        }
-    }
-
-    function delete_device($mac_id) {
-        $sql = "DELETE FROM endpointman_mac_list WHERE id=" . $mac_id;
-        sql($sql);
-
-        $sql = "DELETE FROM endpointman_line_list WHERE mac_id=" . $mac_id;
-        sql($sql);
-        $this->message['delete_device'] = "Deleted!";
-        return(TRUE);
-    }
-*/
- /*   function get_message($function_name) {
-        if (isset($this->message[$function_name])) {
-            return($this->message[$function_name]);
-        } else {
-            return("Unknown Message");
-        }
-    }
-
-
-
-
-
-
-
+			$phone_info = array(
+				'id'                  => $mac_id,
+				'mac'                 => $row['mac'],
+				'brand_id'            => $brand ? $brand['id'] : 0,
+				'name'                => $brand ? $brand['name'] : _("Unknown"),
+				'model_id'            => 0,
+				'model'               => _("Unknown"),
+				'product_id'          => 0,
+				'template_id'         => 0,
+				'custom_cfg_template' => 0,
+			);
+		}
+
+		$phone_info['line'] = array();
+		$lines_info = $this->eda->sql($lines_sql, 'getAll', \PDO::FETCH_ASSOC);
+		foreach ((array) $lines_info as $line)
+		{
+			$n = (int) $line['line'];
+			$phone_info['line'][$n] = $line;
+			$phone_info['line'][$n]['description']    = $line['epm_description'];
+			$phone_info['line'][$n]['user_extension'] = $line['user'] ?? $line['ext'];
+		}
+		return $phone_info;
+	}
+
+	/**
+	 * Registration state of every SIP/PJSIP device, keyed by extension.
+	 * @return array [ext => ['status' => bool, 'ip' => string]]
+	 */
+	public function device_status_map()
+	{
+		$out = array();
+		$run = function ($cmd) {
+			$text = '';
+			if (is_object($this->astman) && method_exists($this->astman, 'Command'))
+			{
+				try
+				{
+					$res  = $this->astman->Command($cmd);
+					$text = is_array($res) ? ($res['data'] ?? implode("\n", $res)) : (string) $res;
+				}
+				catch (\Throwable $e)
+				{
+					$text = '';
+				}
+			}
+			if ($text === '')
+			{
+				$bin  = $this->getConfig('asterisk_location', 'asterisk');
+				$text = (string) shell_exec(escapeshellcmd($bin) . " -rx " . escapeshellarg($cmd) . " 2>/dev/null");
+			}
+			return explode("\n", $text);
+		};
+
+		foreach ($run('pjsip show contacts') as $data)
+		{
+			if (preg_match('/Contact:\s+(\d+)\/sip:[^@]*@(\d{1,3}(?:\.\d{1,3}){3})/i', $data, $m))
+			{
+				$out[$m[1]] = array('status' => (bool) preg_match('/\b(Avail|NonQual)\b/i', $data), 'ip' => $m[2]);
+			}
+		}
+		foreach ($run('sip show peers') as $data)
+		{
+			if (preg_match('/^(\d+)\/[^\s]+\s+(\d{1,3}(?:\.\d{1,3}){3})/', $data, $m))
+			{
+				$out[$m[1]] = array('status' => (bool) preg_match('/OK \(/i', $data), 'ip' => $m[2]);
+			}
+		}
+		return $out;
+	}
+
+	public function validate_netmask($mask)
+	{
+		return (bool) preg_match('/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/', (string) $mask);
+	}
+
+	/**
+	 * Discover phones on the LAN from the ARP cache, optionally after an nmap ping sweep.
+	 * @return array|false [['ip','mac','mac_strip','oui','brand','brand_id','endpoint_managed']]
+	 */
+	public function discover_new($netmask, $use_nmap = TRUE)
+	{
+		if (!$this->validate_netmask($netmask))
+		{
+			$this->error['discover_new'] = _("Invalid Netmask");
+			return false;
+		}
+		$nmap = $this->getConfig('nmap_location', '/usr/bin/nmap');
+		$arp  = $this->getConfig('arp_location', '/usr/sbin/arp');
+		if ($use_nmap)
+		{
+			if (!empty($nmap) && is_executable($nmap))
+			{
+				shell_exec(escapeshellcmd($nmap) . ' -n -sn ' . escapeshellarg($netmask) . ' 2>/dev/null');
+			}
+			else
+			{
+				$this->message['discover_new'] = _("Could Not Find NMAP, Using ARP Only");
+			}
+		}
+
+		$arp_list = '';
+		if (!empty($arp) && is_executable($arp))
+		{
+			$arp_list = (string) shell_exec(escapeshellcmd($arp) . ' -an 2>/dev/null');
+		}
+		if (trim($arp_list) === '' && is_executable('/usr/sbin/ip'))
+		{
+			// arp(8) missing (Debian 12+ minimal): translate "ip neigh" into arp -an lines
+			foreach (explode("\n", (string) shell_exec('/usr/sbin/ip -4 neigh show 2>/dev/null')) as $l)
+			{
+				if (preg_match('/^(\S+)\s+.*lladdr\s+([0-9a-f:]{17})/i', $l, $m))
+				{
+					$arp_list .= "? (" . $m[1] . ") at " . $m[2] . "\n";
+				}
+			}
+		}
+
+		$rows  = array_values(array_unique(preg_grep('/([0-9a-f]{2}[:-]){5}[0-9a-f]{2}/i', explode("\n", $arp_list))));
+		$final = array();
+		foreach ($rows as $value)
+		{
+			if (!preg_match('/\((\d{1,3}(?:\.\d{1,3}){3})\)/', $value, $ipm) || !preg_match('/(([0-9a-f]{2}[:-]){5}[0-9a-f]{2})/i', $value, $macm))
+			{
+				continue;
+			}
+			$ip        = $ipm[1];
+			$mac       = $macm[1];
+			$mac_strip = strtoupper(preg_replace('/[^0-9a-f]/i', '', $mac));
+			if ($mac_strip === '000000000000' || $mac_strip === 'FFFFFFFFFFFF')
+			{
+				continue;
+			}
+			$brand   = $this->get_brand_from_mac($mac_strip);
+			$sql     = sprintf("SELECT id FROM %s WHERE mac = %s", self::TABLES['epm_mac_list'], $this->q($mac_strip));
+			$managed = (bool) $this->eda->sql($sql, 'getOne');
+			$final[] = array(
+				'ip'               => $ip,
+				'mac'              => $mac,
+				'mac_strip'        => $mac_strip,
+				'oui'              => substr($mac_strip, 0, 6),
+				'brand'            => ($brand && $brand['id']) ? $brand['name'] : false,
+				'brand_id'         => ($brand && $brand['id']) ? $brand['id'] : null,
+				'endpoint_managed' => $managed,
+			);
+		}
+		return empty($final) ? false : $final;
+	}
+
+	/**
+	 * Load the Provisioner backend classes for a phone and return a configured
+	 * instance of endpoint_<brand>_<family>_phone.
+	 * @return object|false
+	 */
+	private function load_provisioner($phone_info)
+	{
+		$base_dir  = $this->system->buildPath($this->PHONE_MODULES_PATH, 'endpoint');
+		$brand_dir = $this->system->buildPath($base_dir, $phone_info['directory']);
+		$fam_dir   = $this->system->buildPath($brand_dir, $phone_info['cfg_dir']);
+		$files     = array(
+			'endpoint_base'                                                              => $this->system->buildPath($base_dir, 'base.php'),
+			'endpoint_' . $phone_info['directory'] . '_base'                             => $this->system->buildPath($brand_dir, 'base.php'),
+			'endpoint_' . $phone_info['directory'] . '_' . $phone_info['cfg_dir'] . '_phone' => $this->system->buildPath($fam_dir, 'phone.php'),
+		);
+		$class = 'endpoint_' . $phone_info['directory'] . '_' . $phone_info['cfg_dir'] . '_phone';
+
+		$ok = $this->runLegacy(function () use ($files) {
+			foreach ($files as $cls => $file)
+			{
+				if (!class_exists($cls, false))
+				{
+					if (!is_file($file))
+					{
+						return $file;
+					}
+					require_once $file;
+				}
+			}
+			return true;
+		});
+		if ($ok !== true)
+		{
+			$this->error['parse_configs'] = sprintf(_("Provisioner file '%s' is missing. Reinstall the brand package from the Package Manager."), $ok);
+			return false;
+		}
+		if (!class_exists($class, false))
+		{
+			$this->error['parse_configs'] = sprintf(_("Can't load class '%s' from the Provisioner package"), $class);
+			return false;
+		}
+
+		$root    = rtrim($this->PHONE_MODULES_PATH, '/') . '/';
+		$engine  = $this->getConfig('asterisk_location', 'asterisk') ?: 'asterisk';
+		$version = "EndPoint Manager Version " . $this->getConfig('version');
+		// Every write into the backend object happens under runLegacy(): the backend
+		// declares few properties and PHP 8.2 reports each dynamic one as deprecated,
+		// which FreePBX's error handler would otherwise turn into an exception.
+		return $this->runLegacy(function () use ($class, $root, $engine, $version, $phone_info) {
+			$lib = new $class();
+			$lib->root_dir        = $root;
+			$lib->engine          = 'asterisk';
+			$lib->engine_location = $engine;
+			$lib->system          = 'unix';
+			$lib->brand_name      = $phone_info['directory'];
+			$lib->family_line     = $phone_info['cfg_dir'];
+			$lib->model           = $phone_info['model'];
+			$lib->processor_info  = $version;
+			return $lib;
+		});
+	}
+
+	/**
+	 * Global settings that apply to a phone: the template's override, else the
+	 * device's own override, else the module settings.
+	 */
+	private function effective_settings($phone_info)
+	{
+		$settings = null;
+		if ((int) ($phone_info['template_id'] ?? 0) > 0 && !empty($phone_info['template_data_info']['global_settings_override']))
+		{
+			$settings = @unserialize($phone_info['template_data_info']['global_settings_override']);
+		}
+		elseif (!empty($phone_info['global_settings_override']))
+		{
+			$settings = @unserialize($phone_info['global_settings_override']);
+		}
+		if (!is_array($settings))
+		{
+			$settings = array();
+		}
+		$defaults = array(
+			'srvip'           => $this->getConfig('srvip'),
+			'srvport'         => $this->getConfig('srvport', '5060'),
+			'ntp'             => $this->getConfig('ntp'),
+			'config_location' => $this->getConfig('config_location'),
+			'tz'              => $this->getConfig('tz'),
+		);
+		foreach ($defaults as $k => $v)
+		{
+			if (!isset($settings[$k]) || $settings[$k] === '' || $settings[$k] === null)
+			{
+				$settings[$k] = $v;
+			}
+		}
+		return $settings;
+	}
+
+	/**
+	 * Build the data Provisioner expects, generate the files and (optionally) write
+	 * them and reboot the phone.
+	 * @param array $phone_info From get_phone_info()
+	 * @param bool  $reboot     Reboot after writing
+	 * @param bool  $write      Write files (true) or return the generated files (false)
+	 * @return bool|array
+	 */
+	public function prepare_configs($phone_info, $reboot = TRUE, $write = TRUE)
+	{
+		if (empty($phone_info) || empty($phone_info['directory']) || empty($phone_info['cfg_dir']))
+		{
+			$this->error['parse_configs'] = _("This device has no model assigned, edit it and pick a brand and model first");
+			return false;
+		}
+		if (empty($phone_info['line']))
+		{
+			$this->error['parse_configs'] = sprintf(_("Device %s has no lines"), $phone_info['mac']);
+			return false;
+		}
+
+		$lib = $this->load_provisioner($phone_info);
+		if (!$lib)
+		{
+			return false;
+		}
+
+		$settings = $this->effective_settings($phone_info);
+		if (empty($settings['srvip']))
+		{
+			$this->error['parse_configs'] = _("The IP address of the phone server is not set (Advanced Settings)");
+			return false;
+		}
+
+		try
+		{
+			$tz = new \DateTimeZone($settings['tz'] ?: date_default_timezone_get());
+		}
+		catch (\Exception $e)
+		{
+			$this->error['parse_configs'] = _("Error Returned From Timezone Library: ") . $e->getMessage();
+			return false;
+		}
+
+		$global_user_cfg_data = @unserialize((string) ($phone_info['global_user_cfg_data'] ?? ''));
+		if ((int) $phone_info['template_id'] > 0)
+		{
+			$global_custom_cfg_data = @unserialize((string) ($phone_info['template_data_info']['global_custom_cfg_data'] ?? ''));
+			$override_ids           = @unserialize((string) ($phone_info['template_data_info']['config_files_override'] ?? ''));
+		}
+		else
+		{
+			$global_custom_cfg_data = @unserialize((string) ($phone_info['global_custom_cfg_data'] ?? ''));
+			$override_ids           = @unserialize((string) ($phone_info['config_files_override'] ?? ''));
+		}
+
+		// Alternate configuration files stored in the database instead of the ones on disk
+		$override_files = array();
+		if (is_array($override_ids))
+		{
+			foreach ($override_ids as $list)
+			{
+				$sql  = sprintf("SELECT original_name, data FROM endpointman_custom_configs WHERE id = %d", (int) $list);
+				$data = $this->eda->sql($sql, 'getRow', \PDO::FETCH_ASSOC);
+				if (!empty($data))
+				{
+					$override_files[$data['original_name']] = $data['data'];
+				}
+			}
+		}
+
+		$global_custom_cfg_ari = array();
+		if (is_array($global_custom_cfg_data) && array_key_exists('data', $global_custom_cfg_data))
+		{
+			$global_custom_cfg_ari  = is_array($global_custom_cfg_data['ari'] ?? null) ? $global_custom_cfg_data['ari'] : array();
+			$global_custom_cfg_data = is_array($global_custom_cfg_data['data']) ? $global_custom_cfg_data['data'] : array();
+		}
+		else
+		{
+			$global_custom_cfg_data = array();
+		}
+		$use_ari = ($this->getConfig('enable_ari') == 1) && is_array($global_user_cfg_data);
+
+		$new_template_data = array();
+		$line_ops          = array();
+		foreach ($global_custom_cfg_data as $full_key => $data)
+		{
+			$value = ($use_ari && isset($global_custom_cfg_ari[$full_key]) && isset($global_user_cfg_data[$full_key])) ? $global_user_cfg_data[$full_key] : $data;
+			$key   = explode('|', $full_key);
+			switch (count($key))
+			{
+				case 1:
+					$new_template_data[$full_key] = $value;
+					break;
+				case 2:
+					$breaks = explode('_', $key[1]);
+					if (isset($breaks[2]))
+					{
+						$new_template_data['loops'][$breaks[0]][$breaks[2]][$breaks[1]] = $value;
+					}
+					break;
+				case 3:
+					$line_ops[$key[1]][$key[2]] = $value;
+					break;
+			}
+		}
+
+		if (!$write)
+		{
+			$new_template_data['provision'] = array(
+				'type'       => 'dynamic',
+				'protocol'   => 'http',
+				'path'       => rtrim($settings['srvip'] . dirname($_SERVER['REQUEST_URI'] ?? '/') . '/', '/'),
+				'encryption' => FALSE,
+			);
+		}
+		else
+		{
+			$new_template_data['provision'] = array(
+				'type'       => 'file',
+				'protocol'   => 'tftp',
+				'path'       => $settings['srvip'],
+				'encryption' => FALSE,
+			);
+		}
+		$new_template_data['ntp'] = $settings['ntp'];
+
+		$specific_settings = array();
+		if (!empty($phone_info['specific_settings']))
+		{
+			$specific_settings = @unserialize($phone_info['specific_settings']);
+			$specific_settings = is_array($specific_settings) ? $specific_settings : array();
+		}
+
+		$lib_settings = $new_template_data;
+
+		// SIP port for {$server_port.line.N} / {$server.port.1}: template or device override, else global setting, else 5060
+		$server_port = (string) $settings['srvport'];
+		if (!ctype_digit($server_port) || (int) $server_port < 1 || (int) $server_port > 65535)
+		{
+			$server_port = '5060';
+		}
+
+		$li = 0;
+		foreach ($phone_info['line'] as $line)
+		{
+			$line_options = (isset($line_ops[$line['line']]) && is_array($line_ops[$line['line']])) ? $line_ops[$line['line']] : array();
+			$line_statics = array(
+				'line'           => $line['line'],
+				'username'       => $line['ext'],
+				'authname'       => $line['ext'],
+				'secret'         => $line['secret'] ?? '',
+				'displayname'    => $line['description'],
+				'server_host'    => $settings['srvip'],
+				'server_port'    => $server_port,
+				'user_extension' => $line['user_extension'] ?? $line['ext'],
+			);
+			$lib_settings['line'][$li] = array_merge($line_options, $line_statics);
+			$li++;
+		}
+
+		if (array_key_exists('data', $specific_settings) && is_array($specific_settings['data']))
+		{
+			foreach ($specific_settings['data'] as $key => $data)
+			{
+				$default_exp = explode('|', $key);
+				if (isset($default_exp[2]))
+				{
+					$var  = $default_exp[2];
+					$line = $default_exp[1];
+					$loc  = $this->system->arraysearchrecursive($line, $lib_settings['line'], 'line');
+					if ($loc !== FALSE)
+					{
+						$lib_settings['line'][$loc[0]][$var] = $data;
+					}
+					elseif (isset($specific_settings['data']['line|' . $line . '|line_enabled']))
+					{
+						$keys    = array_keys($lib_settings['line']);
+						$lastkey = ((int) array_pop($keys)) + 1;
+						$lib_settings['line'][$lastkey]['line'] = $line;
+						$lib_settings['line'][$lastkey][$var]   = $data;
+					}
+				}
+				else
+				{
+					switch ($key)
+					{
+						case "connection_type":
+						case "primary_dns":
+							$lib_settings['network'][$key] = $data;
+							break;
+						case "ip4_address":
+							$lib_settings['network']['ipv4'] = $data;
+							break;
+						case "ip6_address":
+							$lib_settings['network']['ipv6'] = $data;
+							break;
+						case "subnet_mask":
+							$lib_settings['network']['subnet'] = $data;
+							break;
+						case "gateway_address":
+							$lib_settings['network']['gateway'] = $data;
+							break;
+						default:
+							$lib_settings[$key] = $data;
+							break;
+					}
+				}
+			}
+		}
+
+		$lib_settings['mac'] = $phone_info['mac'];
+		$mac   = $phone_info['mac'];
+		$debug = (bool) $this->getConfig('debug');
+
+		$time_start = microtime(true);
+		try
+		{
+			$returned_data = $this->runLegacy(function () use ($lib, $lib_settings, $override_files, $tz, $mac, $debug) {
+				$lib->DateTimeZone = $tz;
+				foreach ($override_files as $name => $content)
+				{
+					$lib->config_files_override[$name] = $content;
+				}
+				$lib->settings = $lib_settings;
+				$lib->mac      = $mac;
+				$lib->debug    = $debug;
+				return $lib->generate_all_files();
+			});
+		}
+		catch (\Throwable $e)
+		{
+			$this->error['prepare_configs'] = _("Error Returned From Provisioner Library: ") . $e->getMessage();
+			return false;
+		}
+		if (!is_array($returned_data) || empty($returned_data))
+		{
+			$this->error['prepare_configs'] = _("The Provisioner library generated no files");
+			return false;
+		}
+		if ((microtime(true) - $time_start) > 360)
+		{
+			$this->error['generate_time'] = sprintf(_("It took an awfully long time to generate configs (%s seconds)"), round(microtime(true) - $time_start, 2));
+		}
+
+		if (!$write)
+		{
+			return $returned_data;
+		}
+		return $this->write_configs($lib, $reboot, $settings['config_location'], $phone_info, $returned_data);
+	}
+
+	/**
+	 * Write generated files (plus the package's static directories/files) to the
+	 * configuration location, keeping a copy of the previous version, then reboot.
+	 */
+	public function write_configs($lib, $reboot, $write_path, $phone_info, $returned_data)
+	{
+		$write_path = rtrim((string) $write_path, '/') . '/';
+		if ($write_path === '/' || !is_dir($write_path) || !is_writable($write_path))
+		{
+			$this->error['parse_configs'] = sprintf(_("Configuration Location '%s' is not a writable directory (Advanced Settings)"), $write_path);
+			return false;
+		}
+		$pkg_dir = $this->system->buildPath($this->PHONE_MODULES_PATH, 'endpoint', $phone_info['directory'], $phone_info['cfg_dir']) . '/';
+
+		if (!empty($lib->directory_structure))
+		{
+			foreach ((array) $lib->directory_structure as $data)
+			{
+				$src = $pkg_dir . $data;
+				if (is_dir($src))
+				{
+					$iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($src, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+					foreach ($iterator as $file)
+					{
+						$dir = $write_path . str_replace($pkg_dir, '', dirname((string) $file));
+						if (!is_dir($dir) && !@mkdir($dir, 0775, true))
+						{
+							$this->error['parse_configs'] = _("Could Not Create Directory: ") . $data;
+							return false;
+						}
+					}
+				}
+				elseif (!is_dir($write_path . $data) && !@mkdir($write_path . $data, 0775, true))
+				{
+					$this->error['parse_configs'] = _("Could Not Create Directory: ") . $data;
+					return false;
+				}
+			}
+		}
+
+		if (!empty($lib->copy_files))
+		{
+			foreach ((array) $lib->copy_files as $data)
+			{
+				$orig = $pkg_dir . $data;
+				if (!file_exists($orig))
+				{
+					continue;
+				}
+				$dest = $write_path . $data;
+				if (!is_dir(dirname($dest)))
+				{
+					@mkdir(dirname($dest), 0775, true);
+				}
+				if (!@copy($orig, $dest))
+				{
+					$this->error['parse_configs'] = _("Could Not Create File: ") . $data;
+					return false;
+				}
+				@chmod($dest, 0664);
+			}
+		}
+
+		$protected = is_array($lib->protected_files) ? $lib->protected_files : array();
+		$backup    = !$this->getConfig('backup_check');
+		foreach ($returned_data as $file => $data)
+		{
+			$target = $write_path . $file;
+			if (file_exists($target) && in_array($file, $protected, true))
+			{
+				continue;
+			}
+			if (!is_dir(dirname($target)))
+			{
+				@mkdir(dirname($target), 0775, true);
+			}
+			if (file_exists($target) && !is_writable($target))
+			{
+				$this->error['parse_configs'] = sprintf(_("File %s is not writable"), $target);
+				return false;
+			}
+			if ($backup && file_exists($target))
+			{
+				if (!is_dir($write_path . 'config_bkup') && !@mkdir($write_path . 'config_bkup', 0775, true))
+				{
+					$this->error['parse_configs'] = _("Could Not Create Backup Directory");
+					return false;
+				}
+				@copy($target, $write_path . 'config_bkup/' . basename($file) . '.' . time());
+			}
+			if (@file_put_contents($target, $data) === false)
+			{
+				$this->error['parse_configs'] = sprintf(_("File (%s) not written to hard drive!"), $file);
+				return false;
+			}
+			@chmod($target, 0664);
+		}
+
+		$this->message['write_configs'][] = sprintf(_("Configuration written for %s (%d files in %s)"), $phone_info['mac'], count($returned_data), $write_path);
+		if ($reboot)
+		{
+			$this->runLegacy(function () use ($lib) { $lib->reboot(); });
+		}
+		return true;
+	}
+
+	/**
+	 * Reboot a phone through its Provisioner class (SIP NOTIFY etc.) without rewriting files.
+	 */
+	public function reboot_phone($phone_info)
+	{
+		if (empty($phone_info) || empty($phone_info['directory']) || empty($phone_info['line']))
+		{
+			return false;
+		}
+		$lib = $this->load_provisioner($phone_info);
+		if (!$lib)
+		{
+			return false;
+		}
+		$first = reset($phone_info['line']);
+		$line0 = array('line' => $first['line'], 'username' => $first['ext'], 'authname' => $first['ext'], 'tech' => $first['tech'] ?? 'pjsip');
+		$mac   = $phone_info['mac'];
+		$this->runLegacy(function () use ($lib, $line0, $mac) {
+			$lib->settings['line'][0] = $line0;
+			$lib->mac = $mac;
+			$lib->reboot();
+		});
+		return true;
+	}
+
+	/**
+	 * Rebuild the configuration of one phone by mac id (used by the pages and the Extensions hook).
+	 */
+	public function rebuild_device($mac_id, $reboot = FALSE)
+	{
+		$phone_info = $this->get_phone_info($mac_id);
+		if (!$phone_info)
+		{
+			return false;
+		}
+		$this->update_line(NULL, $mac_id);
+		$phone_info = $this->get_phone_info($mac_id);
+		return $this->prepare_configs($phone_info, $reboot, TRUE) === true;
+	}
+
+	/**
+	 * Messages and errors collected by the engine, as the page shows them.
+	 * @return array ['message' => [...], 'error' => [...]]
+	 */
+	public function collect_messages(bool $clear = true)
+	{
+		$flat = function ($list) {
+			$out = array();
+			foreach ((array) $list as $key => $item)
+			{
+				foreach ((array) $item as $text)
+				{
+					if ((string) $text !== '')
+					{
+						$out[] = (string) $text;
+					}
+				}
+			}
+			return array_values(array_unique($out));
+		};
+		$out = array('message' => $flat($this->message), 'error' => $flat($this->error));
+		if ($clear)
+		{
+			$this->message = array();
+			$this->error   = array();
+		}
+		return $out;
+	}
 
     /**
      * Save template from the template view pain

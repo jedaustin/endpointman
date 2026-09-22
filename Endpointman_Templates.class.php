@@ -432,7 +432,7 @@ class Endpointman_Templates
 							}
 							catch (\Exception $e)
 							{
-								continue;
+								continue 2;
 							}
 						break;
 					}

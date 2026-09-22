@@ -1965,34 +1965,43 @@ class Endpointman_Config
         if ($firmware_ver > $product_db->getFirmwareVer())
 		{
 			out(sprintf(_("⚡ New Firmware Version Detected '%s'!"), $firmware_ver));
+			$local_pkg = $this->epm->system->buildPath($this->epm->PHONE_MODULES_PATH, 'firmware', $product_json->getBrandDirecotry(), $firmware_pkg);
 			if ($product_json->isMD5SumFirmwarePkgValid())
 			{
 				out(_("✅ Firmware file is already downloaded, skipping download!"));
 			}
+			elseif (is_file($local_pkg) && filesize($local_pkg) > 1024)
+			{
+				// Firmware supplied by the administrator: <phone modules>/firmware/<brand>/<package>.
+				// The package server hosts templates only and most vendors do not allow redistribution.
+				out(sprintf(_("⚡ Using the local firmware package '%s' (no checksum is available for local packages)."), $local_pkg));
+				if (! @copy($local_pkg, $product_json->getPathFirmwarePkg()))
+				{
+					out(sprintf(_("❌ Could not copy '%s' to '%s'!"), $local_pkg, $product_json->getPathFirmwarePkg()));
+					return false;
+				}
+			}
 			else
 			{
 				out(_("⚡ Downloading firmware..."));
+				$downloaded = false;
 				try
 				{
-					if (! $product_json->downloadFirmwarePkg(true, false))
-					{
-						out(_("❌ Error Downloading Firmware!"));
-						return false;
-					}
+					$downloaded = $product_json->downloadFirmwarePkg(true, false);
 				}
 				catch (\Exception $e)
 				{
 					out(" ❌" . $e->getMessage());
-					return false;
 				}
-				outn(_("⚡ Checking MD5sum of Package thas was downloaded ..."));
-				if (! $product_json->isMD5SumFirmwarePkgValid())
+				if (! $downloaded || ! $product_json->isMD5SumFirmwarePkgValid())
 				{
-					out(" ❌");
-					out(_("❌ Firmware MD5 for the package '%s' is invalid!"), $firmware_pkg);
+					// A failed download leaves the HTTP error body behind as the package file; remove it.
+					$product_json->removeFirmwarePkg();
+					out(_("❌ The package server does not provide this firmware: it hosts templates only, and vendor firmware usually cannot be redistributed."));
+					out(sprintf(_("👁‍🗨 To install it anyway, copy the vendor's firmware files straight into the Configuration Location '%s', or build '%s' as a .tgz that contains a 'firmware/' directory with those files, place it at '%s' and click Install again."), $tftp_path, $firmware_pkg, $local_pkg));
 					return false;
 				}
-				out(" ✔");
+				out(_("✅ MD5sum of the downloaded package is valid."));
 			}
 
 			out(_("⚡ Installing Firmware..."));

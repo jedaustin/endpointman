@@ -456,6 +456,7 @@ function epm_template_custom_config(action, $elmnt, silent_mode = false)
 				'tz'		 : epm_global_get_value_by_form("FormCfgGlobalTemplate", "tz"),
 				'ntp_server' : epm_global_get_value_by_form("FormCfgGlobalTemplate", "ntp_server"),
 				'srvip'		 : epm_global_get_value_by_form("FormCfgGlobalTemplate", "srvip"),
+				'srvport'	 : epm_global_get_value_by_form("FormCfgGlobalTemplate", "srvport"),
 				'config_loc' : epm_global_get_value_by_form("FormCfgGlobalTemplate", "config_loc"),
 				'server_type': epm_global_get_value_by_form("FormCfgGlobalTemplate", "server_type")
 			};
@@ -490,6 +491,7 @@ function epm_template_custom_config(action, $elmnt, silent_mode = false)
 				{
 					case 'get':
 						epm_global_input_value_change_bt("#srvip", data.settings.srvip, false);
+						epm_global_input_value_change_bt("#srvport", data.settings.srvport, false);
 						epm_global_input_value_change_bt("#server_type", data.settings.server_type, false);
 						epm_global_input_value_change_bt("#config_loc", data.settings.config_location, false);
 						epm_global_input_value_change_bt("#tz", data.settings.tz, false);

@@ -1414,6 +1414,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
 		outn(_("⚡ Inserting Config Global and Updating..."));
 		$dataDefault = [
 			'srvip' 					=> '',
+			'srvport' 					=> '5060',
 			'tz' 						=> '',
 			'gmtoff' 					=> '',
 			'gmthr' 					=> '',
@@ -3390,6 +3391,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
     					$settings = unserialize($phone_info['template_data_info']['global_settings_override']);
     				} else {
     					$settings['srvip'] = $this->getConfig('srvip');
+    					$settings['srvport'] = $this->getConfig('srvport', '5060');
     					$settings['ntp'] = $this->getConfig('ntp');
     					$settings['config_location'] = $this->getConfig('config_location');
     					$settings['tz'] = $this->getConfig('tz');
@@ -3399,6 +3401,7 @@ class Endpointman extends FreePBX_Helpers implements BMO {
     					$settings = unserialize($phone_info['global_settings_override']);
     				} else {
     					$settings['srvip'] = $this->getConfig('srvip');
+    					$settings['srvport'] = $this->getConfig('srvport', '5060');
     					$settings['ntp'] = $this->getConfig('ntp');
     					$settings['config_location'] = $this->getConfig('config_location');
     					$settings['tz'] = $this->getConfig('tz');
@@ -3540,11 +3543,16 @@ $this->error['parse_configs'] = 'Error Returned From Timezone Library: ' . $e->g
 
     			$provisioner_lib->settings = $new_template_data;
 
+    			//SIP port for {$server_port.line.N}: template/phone override, else global setting, else 5060
+    			$server_port = (!empty($settings['srvport']) && ctype_digit((string) $settings['srvport'])) ? (string) $settings['srvport'] : (string) $this->getConfig('srvport', '5060');
+    			if (!ctype_digit($server_port) || (int) $server_port < 1 || (int) $server_port > 65535) {
+    				$server_port = '5060';
+    			}
     			//Loop through Lines!
     			$li = 0;
     			foreach ($phone_info['line'] as $line) {
     				$line_options = is_array($line_ops[$line['line']]) ? $line_ops[$line['line']] : array();
-    				$line_statics = array('line' => $line['line'], 'username' => $line['ext'], 'authname' => $line['ext'], 'secret' => $line['secret'], 'displayname' => $line['description'], 'server_host' => $this->getConfig('srvip'), 'server_port' => '5060', 'user_extension' => $line['user_extension']);
+    				$line_statics = array('line' => $line['line'], 'username' => $line['ext'], 'authname' => $line['ext'], 'secret' => $line['secret'], 'displayname' => $line['description'], 'server_host' => $this->getConfig('srvip'), 'server_port' => $server_port, 'user_extension' => $line['user_extension']);
     				$provisioner_lib->settings['line'][$li] = array_merge($line_options, $line_statics);
     				$li++;
     			}

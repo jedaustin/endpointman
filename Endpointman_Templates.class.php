@@ -341,6 +341,7 @@ class Endpointman_Templates
 				$settings = $this->templates->getConfigGlobal($tid, $custom);
 		
 				$settings['srvip'] 			 = $settings['srvip'] 			?? ""; 		//$this->epm->getConfig("srvip");
+				$settings['srvport'] 		 = $settings['srvport'] 		?? ""; 		//empty = use the global setting
 				$settings['ntp'] 			 = $settings['ntp'] 			?? "";		//$this->epm->getConfig("ntp");
 				$settings['config_location'] = $settings['config_location'] ?? ""; 		//$this->epm->getConfig("config_location");
 				$settings['tz'] 		 	 = $settings['tz'] 				?? $this->epm->getConfig("tz");
@@ -357,6 +358,10 @@ class Endpointman_Templates
 					"srvip" => [				// Request Name, data in $request['new_data']
 						"type" => "ip",			// Type of Data
 						'bd'   => "srvip",		// Name of the BD
+					],
+					"srvport" => [
+						"type" => "port",
+						'bd'   => "srvport",
 					],
 					"config_loc" => [
 						"type" => "path",
@@ -421,6 +426,22 @@ class Endpointman_Templates
 
 						case "string":
 							$settings[$value['bd']] = $data_new[$arg] ?? "";
+						break;
+
+						case "port":
+							$port = trim($data_new[$arg] ?? '');
+							if ($port === '')
+							{
+								$settings[$value['bd']] = '';	// no override: use the global setting
+							}
+							elseif (ctype_digit($port) && (int) $port >= 1 && (int) $port <= 65535)
+							{
+								$settings[$value['bd']] = $port;
+							}
+							else
+							{
+								$settings_warning = sprintf(_("Skip SIP Port: '%s' is not a valid port, using the global setting."), $port);
+							}
 						break;
 					
 						case "timezone":

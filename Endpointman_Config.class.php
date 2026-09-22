@@ -2102,7 +2102,7 @@ class Endpointman_Config
 				{
 					continue;
 				}
-				$file_path = $this->epm->brindPath($tftp_path, $file);
+				$file_path = $this->epm->system->buildPath($tftp_path, $file);
 				if (file_exists($file_path) &&  is_file($file_path))
 				{
 					if (! is_writable($file_path))

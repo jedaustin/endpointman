@@ -680,7 +680,8 @@ class ProvisionerFamily extends ProvisionerBase
             $this->system->rmrf($path_brand);
         }
 
-        return $copy_error;
+        // true = every file copied (the caller reads this as "copy ok")
+        return ! $copy_error;
     }
 
 

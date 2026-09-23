@@ -1,0 +1,474 @@
+{
+    "format": "oss-epm-mapping",
+    "version": 1,
+    "created": "2026-09-22T16:10:28-07:00",
+    "source": {
+        "host": "weechfinancial.azpbx.com",
+        "freepbx_version": "16.0.50",
+        "endpoint_module": "16.0.98.1",
+        "rows": 46
+    },
+    "phones": [
+        {
+            "mac": "0003E30CC96B",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "105",
+                    "description": "Lobby Phone",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2105",
+                    "description": "Lobby Phone",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        },
+        {
+            "mac": "0003E3340117",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "203",
+                    "description": "April",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2203",
+                    "description": "2-Apr",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3203",
+                    "description": "3-Apr",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4203",
+                    "description": "4-Apr",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        },
+        {
+            "mac": "0003E348DE71",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "104",
+                    "description": "Conf Room",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2104",
+                    "description": "Conf Room",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3104",
+                    "description": "Conf Room",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4104",
+                    "description": "Conf Room",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "0"
+        },
+        {
+            "mac": "000750C67A15",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "204",
+                    "description": "Tenant4",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2204",
+                    "description": "Tenant4",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3204",
+                    "description": "Tenant4",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4204",
+                    "description": "Tenant4",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        },
+        {
+            "mac": "0007EB3F6514",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "102",
+                    "description": "Adam Tolman",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2102",
+                    "description": "Adam Tolman",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3102",
+                    "description": "Adam Tolman",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4102",
+                    "description": "Adam Tolman",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "0"
+        },
+        {
+            "mac": "00085D22089C",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "201",
+                    "description": "Tenant1",
+                    "tech": "sip"
+                },
+                {
+                    "line": 1,
+                    "ext": "2201",
+                    "description": "Tenant1",
+                    "tech": "sip"
+                },
+                {
+                    "line": 1,
+                    "ext": "3201",
+                    "description": "Tenant1",
+                    "tech": "sip"
+                },
+                {
+                    "line": 1,
+                    "ext": "4201",
+                    "description": "Tenant1",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        },
+        {
+            "mac": "003094C28B5D",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "103",
+                    "description": "Workroom",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2103",
+                    "description": "Workroom",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3103",
+                    "description": "Workroom",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4103",
+                    "description": "Workroom",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "0"
+        },
+        {
+            "mac": "003094C441A7",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "101",
+                    "description": "Mark Weech",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2101",
+                    "description": "Mark Weech",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3101",
+                    "description": "Mark Weech",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4101",
+                    "description": "Mark Weech",
+                    "tech": "sip"
+                }
+            ],
+            "blf": [
+                {
+                    "line": 1,
+                    "target": "100",
+                    "label": "Front Desk"
+                }
+            ],
+            "rebuild": "0"
+        },
+        {
+            "mac": "00505853F1F7",
+            "brand": "sangoma",
+            "model": "S505",
+            "template": "sangoma_705_front_desk",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                },
+                {
+                    "line": 5,
+                    "ext": "5100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                },
+                {
+                    "line": 6,
+                    "ext": "6100",
+                    "description": "Front Desk",
+                    "tech": "sip"
+                }
+            ],
+            "blf": [
+                {
+                    "line": 1,
+                    "target": "101",
+                    "label": "Transfer Mark"
+                }
+            ],
+            "rebuild": "0"
+        },
+        {
+            "mac": "9007EB462849",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "202",
+                    "description": "Debbie",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2202",
+                    "description": "Debbie- 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 3,
+                    "ext": "3202",
+                    "description": "Debbie- 3",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "4202",
+                    "description": "Debbie - 4",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        },
+        {
+            "mac": "999999999999",
+            "brand": "cisco",
+            "model": "CP7960",
+            "template": "cisco_phones",
+            "lines": [
+                {
+                    "line": 1,
+                    "ext": "107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 2,
+                    "ext": "2107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 4,
+                    "ext": "3107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 5,
+                    "ext": "4107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 6,
+                    "ext": "5107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                },
+                {
+                    "line": 7,
+                    "ext": "6107",
+                    "description": "Workroom 2",
+                    "tech": "sip"
+                }
+            ],
+            "rebuild": "1"
+        }
+    ],
+    "problems": [
+        {
+            "mac": "0003E30CC96B",
+            "level": "info",
+            "message": "OUI 0003E3 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "0003E3340117",
+            "level": "info",
+            "message": "OUI 0003E3 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "0003E348DE71",
+            "level": "info",
+            "message": "OUI 0003E3 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "000750C67A15",
+            "level": "info",
+            "message": "OUI 000750 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "0007EB3F6514",
+            "level": "info",
+            "message": "OUI 0007EB is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "00085D22089C",
+            "level": "warning",
+            "message": "OUI 00085D belongs to 'aastra' but the row says brand 'cisco'"
+        },
+        {
+            "mac": "003094C28B5D",
+            "level": "info",
+            "message": "OUI 003094 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "003094C441A7",
+            "level": "info",
+            "message": "OUI 003094 is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "9007EB462849",
+            "level": "info",
+            "message": "OUI 9007EB is not in the commercial module's OUI list (the list is incomplete; only worth a look if the phone never provisioned)"
+        },
+        {
+            "mac": "999999999999",
+            "level": "error",
+            "message": "MAC '999999999999' is a placeholder, not a device"
+        },
+        {
+            "mac": "00085D22089C",
+            "level": "error",
+            "message": "line 1 is assigned to 4 extensions (201, 2201, 3201, 4201); the commercial module stored the same account for all of them, decide which extension goes on which line"
+        },
+        {
+            "mac": "00505853F1F7",
+            "level": "error",
+            "message": "extension 5100 is on line 5 but model S505 has only 4 accounts"
+        },
+        {
+            "mac": "00505853F1F7",
+            "level": "error",
+            "message": "extension 6100 is on line 6 but model S505 has only 4 accounts"
+        },
+        {
+            "mac": "999999999999",
+            "level": "error",
+            "message": "extension 6107 is on line 7 but model CP7960 has only 6 accounts"
+        }
+    ]
+}

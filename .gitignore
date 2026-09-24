@@ -1,3 +1,7 @@
 templates/freepbx/compiled/*
 /.vscode/*
 /.phpunit.result.cache
+
+# local working output, never part of the module
+/Claude outputs/
+/Claude_outputs/
